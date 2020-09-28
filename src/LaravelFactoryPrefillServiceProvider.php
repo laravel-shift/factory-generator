@@ -20,7 +20,7 @@ class LaravelFactoryPrefillServiceProvider extends ServiceProvider
             ]);
         }
 
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'prefill-factory-helper');
+        $this->loadViewsFrom(__DIR__ . '/../stubs/views', 'prefill-factory-helper');
     }
 
     /**

@@ -112,12 +112,12 @@ class PrefillFactory extends Command
         }
 
         if ($key === 'password') {
-            return $this->mapToFactory($key, "bcrypt('password')");
+            return $this->mapToFactory($key, "Hash::make('password')");
         }
 
         $value = $column->isUnique()
-            ? '$faker->unique()->'
-            : '$faker->';
+            ? '$this->faker->unique()->'
+            : '$this->faker->';
 
         return $this->mapToFactory($key, $value . $this->mapToFaker($column));
     }
@@ -242,12 +242,12 @@ class PrefillFactory extends Command
     public function buildRelationFunction(string $column, $relationMethod = null)
     {
         $relationName = optional($relationMethod)->getName() ?? Str::camel(str_replace('_id', '', $column));
-        $foreignCallback = 'factory(App\REPLACE_THIS::class)->lazy()';
+        $foreignCallback = '\\App\\REPLACE_THIS::factory()';
 
         try {
             $relatedModel = get_class($this->modelInstance->$relationName()->getRelated());
 
-            return str_replace('App\REPLACE_THIS', $relatedModel, $foreignCallback);
+            return str_replace('App\\REPLACE_THIS', $relatedModel, $foreignCallback);
         } catch (\Exception $e) {
             return $foreignCallback;
         }
@@ -293,12 +293,18 @@ class PrefillFactory extends Command
             return 1;
         }
 
-        $content = view('prefill-factory-helper::factory', [
-            'modelClass' => $modelClass,
-            'data' => $data,
-        ])->render();
+        $definition = '';
+        foreach ($data as $value) {
+            $definition .=  PHP_EOL . '            ' . $value . ',';
+        }
 
-        File::put($path, "<?php\n\n" . $content);
+        $contents = File::get(__DIR__ . '/../../stubs/factory.stub');
+        $contents = str_replace('{{ factoryNamespace }}', 'Database\\Factories', $contents);
+        $contents = str_replace('{{ namespacedModel }}', $modelClass, $contents);
+        $contents = str_replace('{{ model }}', class_basename($modelClass), $contents);
+        $contents = str_replace('            //', trim($definition, PHP_EOL), $contents);
+
+        File::put($path, $contents);
 
         return 0;
     }
