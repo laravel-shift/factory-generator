@@ -1,39 +1,24 @@
 <?php
 
-namespace Shift\FactoryGenerator\Commands;
+namespace Shift\FactoryGenerator;
 
-use Illuminate\Support\Str;
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
-use Naoray\EloquentModelAnalyzer\Column;
-use Naoray\EloquentModelAnalyzer\Analyzer;
-use Shift\FactoryGenerator\TypeGuesser;
-use Naoray\EloquentModelAnalyzer\RelationMethod;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
+use Naoray\EloquentModelAnalyzer\Analyzer;
+use Naoray\EloquentModelAnalyzer\Column;
+use Naoray\EloquentModelAnalyzer\RelationMethod;
+use PhpParser\NodeFinder;
+use PhpParser\ParserFactory;
 
-class PrefillFactory extends Command
+class FactoryGenerator
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'factory:prefill 
-                        {model : The name of the model for which a blueprint will be created}
-                        {--O|own-namespace : When using this flag the model have to include the full namespace}
-                        {--N|allow-nullable : Also list nullable columns in your factory}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Prefills factory for the given model with a faker method suggestions.';
-
     /**
      * @var \Shift\FactoryGenerator\TypeGuesser
      */
     protected $typeGuesser;
+
+    private $allowNullable = false;
 
     /**
      * Instance of the model the factory is created for.
@@ -42,25 +27,14 @@ class PrefillFactory extends Command
      */
     protected $modelInstance;
 
-    /**
-     * Create a new command instance.
-     */
-    public function __construct(TypeGuesser $guesser)
+    public function __construct(TypeGuesser $guesser, $allowNullable)
     {
-        parent::__construct();
-
         $this->typeGuesser = $guesser;
+        $this->allowNullable = $allowNullable;
     }
 
-    /**
-     * Execute the console command.
-     *
-     * @return mixed
-     */
-    public function handle()
+    public function generate($model)
     {
-        $model = $this->argument('model');
-
         if (!$modelClass = $this->modelExists($model)) {
             return 1;
         }
@@ -129,7 +103,7 @@ class PrefillFactory extends Command
      */
     protected function shouldBeIncluded(Column $column)
     {
-        $shouldBeIncluded = ($column->getNotNull() || $this->option('allow-nullable'))
+        $shouldBeIncluded = ($column->getNotNull() || $this->allowNullable)
             && !$column->getAutoincrement();
 
         if (!$this->modelInstance->usesTimestamps()) {
@@ -187,14 +161,8 @@ class PrefillFactory extends Command
             return $modelClass;
         }
 
-        $this->error($modelClass . ' could not be found!');
-
-        if ($this->confirm("Do you wish me to create {$modelClass} for you?")) {
-            $this->call('make:model', ['name' => $modelClass]);
-            $this->info("Please repeat the factory:prefill $name command.");
-        }
-
-        return false;
+        // TODO: this check should happen before calling this service class...
+        throw new \UnexpectedValueException('could not find model [' . $name . ']');
     }
 
     /**
@@ -207,11 +175,10 @@ class PrefillFactory extends Command
     protected function factoryExists($name)
     {
         $factoryPath = database_path("factories/{$name}Factory.php");
-        if (!File::exists($factoryPath) || $this->confirm("A factory file for $name already exists, do you wish to overwrite the existing file?")) {
+        if (!File::exists($factoryPath)) {
+            // TODO: should not be counted as a "generated" factory
             return $factoryPath;
         }
-
-        $this->info('Canceled blueprint creation!');
 
         return false;
     }
@@ -266,7 +233,7 @@ class PrefillFactory extends Command
 
         $rootNamespace = app()->getNamespace();
 
-        if ($this->option('own-namespace') || Str::startsWith($name, $rootNamespace)) {
+        if (Str::startsWith($name, $rootNamespace)) {
             return $name;
         }
 
