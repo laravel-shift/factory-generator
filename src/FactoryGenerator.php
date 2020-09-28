@@ -55,12 +55,8 @@ class FactoryGenerator
             ->unique()
             ->values()
             ->pipe(function ($properties) use ($factoryPath, $modelClass) {
-                $statusCode = $this->writeFactoryFile($factoryPath, $properties, $modelClass);
-                if ($statusCode === 0) {
-                    $this->info('Factory blueprint created!');
-                }
-
-                return $statusCode;
+                $this->writeFactoryFile($factoryPath, $properties, $modelClass);
+                $this->addFactoryTrait($modelClass);
             });
     }
 
@@ -248,31 +244,70 @@ class FactoryGenerator
      * Writes data to factory file.
      *
      * @param string $path
-     * @param array  $data
+     * @param array $data
      *
      * @return bool
      */
     protected function writeFactoryFile($path, $data, $modelClass)
     {
-        if (0 === count($data)) {
-            $this->error('We could not find any data for your factory. Did you `php artisan migrate` already?');
-
-            return 1;
-        }
-
         $definition = '';
         foreach ($data as $value) {
-            $definition .=  PHP_EOL . '            ' . $value . ',';
+            $definition .= PHP_EOL . '            ' . $value . ',';
         }
 
-        $contents = File::get(__DIR__ . '/../../stubs/factory.stub');
+        $contents = File::get(__DIR__ . '/../stubs/factory.stub');
         $contents = str_replace('{{ factoryNamespace }}', 'Database\\Factories', $contents);
         $contents = str_replace('{{ namespacedModel }}', $modelClass, $contents);
         $contents = str_replace('{{ model }}', class_basename($modelClass), $contents);
         $contents = str_replace('            //', trim($definition, PHP_EOL), $contents);
 
         File::put($path, $contents);
+    }
 
-        return 0;
+    protected function addFactoryTrait($modelClass)
+    {
+        $traits = class_uses_recursive($modelClass);
+        if (is_array($traits) && in_array('Illuminate\\Database\\Eloquent\\Factories\\HasFactory', $traits)) {
+            return;
+        }
+
+        $path = (new \ReflectionClass($modelClass))->getFileName();
+
+        $parser = (new ParserFactory)->create(ParserFactory::ONLY_PHP7);
+
+        $contents = File::get($path);
+        $lines = explode(PHP_EOL, $contents);
+        $stmts = $parser->parse($contents);
+
+        $nodeFinder = new NodeFinder;
+
+        $class = $nodeFinder->findFirstInstanceOf($stmts, \PhpParser\Node\Stmt\Class_::class);
+
+        $import = $nodeFinder->findFirstInstanceOf($stmts, \PhpParser\Node\Stmt\Use_::class);
+        if (empty($import)) {
+            $line = $class->getStartLine();
+        } else {
+            $line = $import->getStartLine();
+        }
+
+        array_splice($lines, $line - 1, 0, 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;');
+
+        $traits = $class->getTraitUses();
+        if (empty($traits)) {
+            // TODO: refactor
+            $line = $class->getStartLine() + 1; // add 1 due to import above
+            $found = false;
+            while (!$found) {
+                $found = Str::contains($lines[$line], '{'); // found closing curly
+                ++$line; // advance one more line to place the trait...
+            }
+
+            array_splice($lines, $line, 0, '    use HasFactory;' . PHP_EOL);
+        } else {
+            $line = $traits[0]->getStartLine();
+            array_splice($lines, $line + 1, 0, '    use HasFactory;');
+        }
+
+        File::put($path, implode(PHP_EOL, $lines));
     }
 }
