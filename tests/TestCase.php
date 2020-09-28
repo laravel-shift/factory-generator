@@ -1,6 +1,6 @@
 <?php
 
-namespace Naoray\LaravelFactoryPrefill\Tests;
+namespace Shift\FactoryGenerator\Tests;
 
 use Dotenv\Dotenv;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -17,7 +17,7 @@ class TestCase extends Orchestra
     protected function getPackageProviders($app)
     {
         return [
-            \Naoray\LaravelFactoryPrefill\LaravelFactoryPrefillServiceProvider::class,
+            \Shift\FactoryGenerator\FactoryGeneratorServiceProvider::class,
         ];
     }
 

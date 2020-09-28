@@ -1,10 +1,10 @@
 <?php
 
-namespace Naoray\LaravelFactoryPrefill\Tests;
+namespace Shift\FactoryGenerator\Tests;
 
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;
-use Naoray\LaravelFactoryPrefill\TypeGuesser;
+use Shift\FactoryGenerator\TypeGuesser;
 
 class TypeGuesserTest extends TestCase
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Naoray\LaravelFactoryPrefill\Tests;
+namespace Shift\FactoryGenerator\Tests;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,8 +68,8 @@ class PrefillAllTest extends TestCase
     {
         $this->artisan('factory:all', [
             'models' => [
-                '\Naoray\LaravelFactoryPrefill\Tests\Fixtures\Models\Car',
-                '\Naoray\LaravelFactoryPrefill\Tests\Fixtures\Models\Habit'
+                '\Shift\FactoryGenerator\Tests\Fixtures\Models\Car',
+                '\Shift\FactoryGenerator\Tests\Fixtures\Models\Habit'
             ],
             '--no-interaction' => true,
             '--allow-nullable' => true,

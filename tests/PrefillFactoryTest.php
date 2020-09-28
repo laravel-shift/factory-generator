@@ -1,14 +1,14 @@
 <?php
 
-namespace Naoray\LaravelFactoryPrefill\Tests;
+namespace Shift\FactoryGenerator\Tests;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Naoray\LaravelFactoryPrefill\Tests\Fixtures\Models\Car;
-use Naoray\LaravelFactoryPrefill\Tests\Fixtures\Models\Book;
-use Naoray\LaravelFactoryPrefill\Tests\Fixtures\Models\User;
-use Naoray\LaravelFactoryPrefill\Tests\Fixtures\Models\Habit;
+use Shift\FactoryGenerator\Tests\Fixtures\Models\Car;
+use Shift\FactoryGenerator\Tests\Fixtures\Models\Book;
+use Shift\FactoryGenerator\Tests\Fixtures\Models\User;
+use Shift\FactoryGenerator\Tests\Fixtures\Models\Habit;
 
 class PrefillFactoryTest extends TestCase
 {
@@ -84,7 +84,7 @@ class PrefillFactoryTest extends TestCase
         $this->assertFileExists(database_path('factories/HabitFactory.php'));
         $this->assertTrue(Str::contains(
             File::get(database_path('factories/HabitFactory.php')),
-            "'user_id' => factory(Naoray\LaravelFactoryPrefill\Tests\Fixtures\Models\User::class)->lazy(),"
+            "'user_id' => factory(Shift\FactoryGenerator\Tests\Fixtures\Models\User::class)->lazy(),"
         ));
     }
 
@@ -100,7 +100,7 @@ class PrefillFactoryTest extends TestCase
         $this->assertFileExists(database_path('factories/CarFactory.php'));
         $this->assertTrue(Str::contains(
             File::get(database_path('factories/CarFactory.php')),
-            "'owner_id' => factory(Naoray\LaravelFactoryPrefill\Tests\Fixtures\Models\User::class)->lazy(),"
+            "'owner_id' => factory(Shift\FactoryGenerator\Tests\Fixtures\Models\User::class)->lazy(),"
         ));
     }
 

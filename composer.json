@@ -1,19 +1,9 @@
 {
-    "name": "naoray/laravel-factory-prefill",
-    "description": "Prefills factories with faker method suggestions",
+    "name": "laravel-shift/factory-generator",
+    "description": "Generate factories from existing models",
     "type": "package",
     "license": "MIT",
-    "keywords": [
-        "laravel",
-        "factory",
-        "prefill"
-    ],
-    "authors": [
-        {
-            "name": "Krishan Koenig",
-            "email": "krishan.koenig@googlemail.com"
-        }
-    ],
+    "keywords": ["laravel", "factory", "model", "testing"],
     "require": {
         "illuminate/support": "^8.0",
         "fzaninotto/faker": "^1.9.1",
@@ -24,12 +14,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Naoray\\LaravelFactoryPrefill\\": "./src"
+            "Shift\\FactoryGenerator\\": "./src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Naoray\\LaravelFactoryPrefill\\Tests\\": "tests",
+            "Shift\\FactoryGenerator\\Tests\\": "tests",
             "App\\": "./vendor/orchestra/testbench-core/laravel/app"
         }
     },
@@ -39,7 +29,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Naoray\\LaravelFactoryPrefill\\LaravelFactoryPrefillServiceProvider"
+                "Shift\\FactoryGenerator\\FactoryGeneratorServiceProvider"
             ]
         }
     }

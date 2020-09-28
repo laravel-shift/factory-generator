@@ -1,6 +1,6 @@
 <?php
 
-namespace Naoray\LaravelFactoryPrefill;
+namespace Shift\FactoryGenerator;
 
 use Illuminate\Support\Str;
 use Doctrine\DBAL\Types\Type;

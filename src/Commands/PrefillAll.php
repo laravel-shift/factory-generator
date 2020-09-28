@@ -1,6 +1,6 @@
 <?php
 
-namespace Naoray\LaravelFactoryPrefill\Commands;
+namespace Shift\FactoryGenerator\Commands;
 
 use SplFileInfo;
 use ReflectionClass;
@@ -38,7 +38,7 @@ class PrefillAll extends Command
     {
         $directory = $this->resolveModelPath();
         $models = $this->argument('models');
-        
+
         if (!File::exists($directory)) {
             $this->error("No files in [$directory] were found!");
 

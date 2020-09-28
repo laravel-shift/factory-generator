@@ -1,6 +1,6 @@
 <?php
 
-namespace Naoray\LaravelFactoryPrefill\Tests\Fixtures\Models;
+namespace Shift\FactoryGenerator\Tests\Fixtures\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;

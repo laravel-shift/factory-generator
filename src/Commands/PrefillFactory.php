@@ -1,13 +1,13 @@
 <?php
 
-namespace Naoray\LaravelFactoryPrefill\Commands;
+namespace Shift\FactoryGenerator\Commands;
 
 use Illuminate\Support\Str;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Naoray\EloquentModelAnalyzer\Column;
 use Naoray\EloquentModelAnalyzer\Analyzer;
-use Naoray\LaravelFactoryPrefill\TypeGuesser;
+use Shift\FactoryGenerator\TypeGuesser;
 use Naoray\EloquentModelAnalyzer\RelationMethod;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -31,7 +31,7 @@ class PrefillFactory extends Command
     protected $description = 'Prefills factory for the given model with a faker method suggestions.';
 
     /**
-     * @var \Naoray\LaravelFactoryPrefill\TypeGuesser
+     * @var \Shift\FactoryGenerator\TypeGuesser
      */
     protected $typeGuesser;
 

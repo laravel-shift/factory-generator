@@ -1,12 +1,12 @@
 <?php
 
-namespace Naoray\LaravelFactoryPrefill;
+namespace Shift\FactoryGenerator;
 
 use Illuminate\Support\ServiceProvider;
-use Naoray\LaravelFactoryPrefill\Commands\PrefillAll;
-use Naoray\LaravelFactoryPrefill\Commands\PrefillFactory;
+use Shift\FactoryGenerator\Commands\PrefillAll;
+use Shift\FactoryGenerator\Commands\PrefillFactory;
 
-class LaravelFactoryPrefillServiceProvider extends ServiceProvider
+class FactoryGeneratorServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap services.
