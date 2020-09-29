@@ -29,7 +29,6 @@ class PrefillAllTest extends TestCase
     protected function setUpDatabase($app)
     {
         $this->loadMigrationsFrom([
-            '--database' => 'mysql',
             '--path' => realpath(__DIR__ . '/migrations'),
             '--realpath' => true,
         ]);
@@ -38,10 +37,9 @@ class PrefillAllTest extends TestCase
     /** @test */
     public function it_returns_a_no_files_found_error_if_no_files_were_found_in_the_given_directory()
     {
-        $this->artisan('factory:all', [
+        $this->artisan('generate:factory', [
             '--no-interaction' => true,
             '--path' => $directory = __DIR__ . '/Fixtures/NonExistent',
-            '--realpath' => true,
             '--include-nullable' => true,
         ])
             ->expectsOutput("No files in [$directory] were found!")
@@ -51,10 +49,9 @@ class PrefillAllTest extends TestCase
     /** @test */
     public function it_can_create_prefilled_factories_for_all_models()
     {
-        $this->artisan('factory:all', [
+        $this->artisan('generate:factory', [
             '--no-interaction' => true,
             '--path' => __DIR__ . '/Fixtures/Models',
-            '--realpath' => true,
             '--include-nullable' => true,
         ])->expectsOutput('3 Factories created');
 
@@ -66,7 +63,7 @@ class PrefillAllTest extends TestCase
     /** @test */
     public function it_can_create_prefilled_factories_for_defined_models_only_with_including_namespace()
     {
-        $this->artisan('factory:all', [
+        $this->artisan('generate:factory', [
             'models' => [
                 '\Shift\FactoryGenerator\Tests\Fixtures\Models\Car',
                 '\Shift\FactoryGenerator\Tests\Fixtures\Models\Habit'
