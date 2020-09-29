@@ -15,7 +15,7 @@ class GenerateCommand extends Command
 {
     protected $signature = 'generate:factory {models?*}
                         {--p|path= : The location where the models are located}
-                        {--n|include-nullable : Also list nullable columns in your factory}';
+                        {--i|include-nullable : Include nullable columns in your factory}';
 
     protected $description = 'Generate factories for existing models';
 

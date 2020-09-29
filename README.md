@@ -23,7 +23,7 @@ php artisan generate:factory
 
 Similar to Laravel, this will search for models within the `app/Models` folder, or if that folder does not exist, within the `app` folder.
 
-To generate factories for models within a different folder, you may pass the `--path` option.
+To generate factories for models within a different folder, you may pass the `--path` option (or `-p`).
 
 ```sh
 php artisan generate:factory --path=some/Other/Path
@@ -35,7 +35,7 @@ To generate a factory for a single model, you may pass the model name:
 php artisan generate:factory User
 ```
 
-By default _nullable_ columns are not included in the factory definition. If you want to include _nullable_ columns you may set the `--include-nullable` option (or `-n`).
+By default _nullable_ columns are not included in the factory definition. If you want to include _nullable_ columns you may set the `--include-nullable` option (or `-i`).
 
 ```sh
 php artisan generate:factory -n User
