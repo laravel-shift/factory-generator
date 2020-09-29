@@ -121,7 +121,7 @@ class PrefillFactoryTest extends TestCase
             'model' => Car::class,
             '--no-interaction' => true,
             '--own-namespace' => true,
-            '--allow-nullable' => true,
+            '--include-nullable' => true,
         ])->expectsOutput('Factory blueprint created!');
 
         $this->assertFileExists(database_path('factories/CarFactory.php'));
@@ -139,7 +139,7 @@ class PrefillFactoryTest extends TestCase
             'model' => Car::class,
             '--no-interaction' => true,
             '--own-namespace' => true,
-            '--allow-nullable' => true,
+            '--include-nullable' => true,
         ])->expectsOutput('Factory blueprint created!');
 
         $this->assertFileExists(database_path('factories/CarFactory.php'));
@@ -164,7 +164,7 @@ class PrefillFactoryTest extends TestCase
             'model' => Car::class,
             '--no-interaction' => true,
             '--own-namespace' => true,
-            '--allow-nullable' => true,
+            '--include-nullable' => true,
         ])->expectsOutput('Factory blueprint created!');
 
         $this->assertFileExists($path = database_path('factories/CarFactory.php'));

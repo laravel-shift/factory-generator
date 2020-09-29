@@ -14,8 +14,8 @@ use SplFileInfo;
 class GenerateCommand extends Command
 {
     protected $signature = 'generate:factory {models?*}
-                        {--P|path= : The location where the models are located}
-                        {--N|allow-nullable : Also list nullable columns in your factory}';
+                        {--p|path= : The location where the models are located}
+                        {--n|include-nullable : Also list nullable columns in your factory}';
 
     protected $description = 'Generate factories for existing models';
 
@@ -30,8 +30,8 @@ class GenerateCommand extends Command
             return 1;
         }
 
-        // '--allow-nullable' => $this->option('allow-nullable'),
-        $generator = resolve(FactoryGenerator::class, ['allowNullable' => $this->option('allow-nullable')]);
+        // '--include-nullable' => $this->option('include-nullable'),
+        $generator = resolve(FactoryGenerator::class, ['allowNullable' => $this->option('include-nullable')]);
 
         $this->loadModels($directory, $models)
             ->filter(function ($modelClass) {

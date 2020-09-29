@@ -49,4 +49,4 @@ It has diverged to support the latest version of Laravel and to power part of th
 
 
 ## Contributing
-Contributions should be submitted to the `master` branch. Any submissions should be complete with tests and adhere to the [PSR-2 code style](https://www.php-fig.org/psr/psr-2/). You may also contribute by [opening an issue](https://github.com/laravel-shift/model-factory-generator/issues).
+Contributions should be submitted to the `master` branch. Any submissions should be complete with tests and adhere to the [PSR-2 code style](https://www.php-fig.org/psr/psr-2/). You may also contribute by [opening an issue](https://github.com/laravel-shift/factory-generator/issues).

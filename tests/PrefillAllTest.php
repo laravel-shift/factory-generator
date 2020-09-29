@@ -42,7 +42,7 @@ class PrefillAllTest extends TestCase
             '--no-interaction' => true,
             '--path' => $directory = __DIR__ . '/Fixtures/NonExistent',
             '--realpath' => true,
-            '--allow-nullable' => true,
+            '--include-nullable' => true,
         ])
             ->expectsOutput("No files in [$directory] were found!")
             ->assertExitCode(1);
@@ -55,7 +55,7 @@ class PrefillAllTest extends TestCase
             '--no-interaction' => true,
             '--path' => __DIR__ . '/Fixtures/Models',
             '--realpath' => true,
-            '--allow-nullable' => true,
+            '--include-nullable' => true,
         ])->expectsOutput('3 Factories created');
 
         $this->assertFileExists(database_path('factories/CarFactory.php'));
@@ -72,7 +72,7 @@ class PrefillAllTest extends TestCase
                 '\Shift\FactoryGenerator\Tests\Fixtures\Models\Habit'
             ],
             '--no-interaction' => true,
-            '--allow-nullable' => true,
+            '--include-nullable' => true,
         ])->expectsOutput('2 Factories created');
 
         $this->assertFileExists(database_path('factories/CarFactory.php'));
