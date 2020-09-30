@@ -8,7 +8,7 @@
         "illuminate/support": "^8.0",
         "fzaninotto/faker": "^1.9.1",
         "naoray/eloquent-model-analyzer": "^2.0",
-        "nikic/php-parser": "^4.10"
+        "nikic/php-parser": "^4.0"
     },
     "require-dev": {
         "orchestra/testbench": "^6.0"
