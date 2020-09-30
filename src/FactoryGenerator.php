@@ -36,17 +36,17 @@ class FactoryGenerator
     public function generate($model)
     {
         if (!$modelClass = $this->modelExists($model)) {
-            return 1;
+            return null;
         }
 
         $factoryName = class_basename($modelClass);
         if (!$factoryPath = $this->factoryExists($factoryName)) {
-            return 1;
+            return null;
         }
 
         $this->modelInstance = new $modelClass();
 
-        return Analyzer::columns($this->modelInstance)
+        Analyzer::columns($this->modelInstance)
             ->mapWithKeys(function (Column $column) {
                 return $this->mapTableProperties($column);
             })
@@ -58,6 +58,8 @@ class FactoryGenerator
                 $this->writeFactoryFile($factoryPath, $properties, $modelClass);
                 $this->addFactoryTrait($modelClass);
             });
+
+        return $factoryPath;
     }
 
     /**

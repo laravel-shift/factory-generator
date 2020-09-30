@@ -33,15 +33,17 @@ class GenerateCommand extends Command
         $generator = resolve(FactoryGenerator::class, ['allowNullable' => $this->option('include-nullable')]);
 
         $this->loadModels($directory, $models)
-            ->filter(function ($modelClass) {
-                return (new ReflectionClass($modelClass))->isSubclassOf(Model::class);
+            ->filter(function ($model) {
+                return (new ReflectionClass($model))->isSubclassOf(Model::class);
             })
             ->each(function ($model) use ($generator) {
-                $generator->generate($model);
-            })
-            ->pipe(function ($collection) {
-                $factoriesCount = $collection->count();
-                $this->info($factoriesCount . ' ' . Str::plural('factory', $factoriesCount) . ' created');
+                $factory = $generator->generate($model);
+
+                if ($factory) {
+                    $this->line('<info>Model factory created:</info> ' . $factory);
+                } else {
+                    $this->line('<error>Failed to create factory for model:</error> ' . $model);
+                }
             });
 
         return 0;
