@@ -1,6 +1,6 @@
 <?php
 
-namespace Shift\FactoryGenerator\Tests\Fixtures\Models;
+namespace Tests\Fixtures\Models;
 
 use Illuminate\Database\Eloquent\Model;
 

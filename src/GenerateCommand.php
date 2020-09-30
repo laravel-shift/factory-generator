@@ -8,7 +8,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use ReflectionClass;
-use Shift\FactoryGenerator\FactoryGenerator;
 use SplFileInfo;
 
 class GenerateCommand extends Command
@@ -42,7 +41,7 @@ class GenerateCommand extends Command
             })
             ->pipe(function ($collection) {
                 $factoriesCount = $collection->count();
-                $this->info($factoriesCount . ' ' . Str::plural('Factory', $factoriesCount) . ' created');
+                $this->info($factoriesCount . ' ' . Str::plural('factory', $factoriesCount) . ' created');
             });
 
         return 0;

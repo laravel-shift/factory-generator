@@ -1,6 +1,6 @@
 <?php
 
-namespace Shift\FactoryGenerator\Tests;
+namespace Tests;
 
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;

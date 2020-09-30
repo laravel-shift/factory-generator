@@ -1,6 +1,6 @@
 <?php
 
-namespace Shift\FactoryGenerator\Tests;
+namespace Tests;
 
 use Dotenv\Dotenv;
 use Orchestra\Testbench\TestCase as Orchestra;
