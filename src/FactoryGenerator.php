@@ -18,7 +18,9 @@ class FactoryGenerator
      */
     protected $typeGuesser;
 
-    private $allowNullable = false;
+    private $includeNullableColumns = false;
+
+    private $overwrite = false;
 
     /**
      * Instance of the model the factory is created for.
@@ -27,10 +29,11 @@ class FactoryGenerator
      */
     protected $modelInstance;
 
-    public function __construct(TypeGuesser $guesser, $allowNullable)
+    public function __construct(TypeGuesser $guesser, $nullables, $overwrite)
     {
         $this->typeGuesser = $guesser;
-        $this->allowNullable = $allowNullable;
+        $this->includeNullableColumns = $nullables;
+        $this->overwrite = $overwrite;
     }
 
     public function generate($model)
@@ -39,8 +42,9 @@ class FactoryGenerator
             return null;
         }
 
-        $factoryName = class_basename($modelClass);
-        if (!$factoryPath = $this->factoryExists($factoryName)) {
+        $factoryPath = $this->factoryPath($modelClass);
+
+        if (!$this->overwrite && $this->factoryExists($factoryPath)) {
             return null;
         }
 
@@ -60,6 +64,11 @@ class FactoryGenerator
             });
 
         return $factoryPath;
+    }
+
+    private function factoryPath($model)
+    {
+        return database_path('factories/' . class_basename($model) . 'Factory.php');
     }
 
     /**
@@ -101,7 +110,7 @@ class FactoryGenerator
      */
     protected function shouldBeIncluded(Column $column)
     {
-        $shouldBeIncluded = ($column->getNotNull() || $this->allowNullable)
+        $shouldBeIncluded = ($column->getNotNull() || $this->includeNullableColumns)
             && !$column->getAutoincrement();
 
         if (!$this->modelInstance->usesTimestamps()) {
@@ -170,15 +179,9 @@ class FactoryGenerator
      *
      * @return bool|string
      */
-    protected function factoryExists($name)
+    protected function factoryExists($path)
     {
-        $factoryPath = database_path("factories/{$name}Factory.php");
-        if (!File::exists($factoryPath)) {
-            // TODO: should not be counted as a "generated" factory
-            return $factoryPath;
-        }
-
-        return false;
+        return File::exists($path);
     }
 
     /**
