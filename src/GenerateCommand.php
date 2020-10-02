@@ -70,7 +70,7 @@ class GenerateCommand extends Command
             return str_replace(
                     ['namespace ', ';'],
                     [''],
-                    $matches[0]
+                    trim($matches[0])
                 ) . "\\{$file->getBasename('.php')}";
         });
     }
