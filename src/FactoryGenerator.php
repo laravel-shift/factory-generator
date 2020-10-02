@@ -68,7 +68,11 @@ class FactoryGenerator
 
     private function factoryPath($model)
     {
-        return database_path('factories/' . class_basename($model) . 'Factory.php');
+        $subDirectory = Str::of($model)
+            ->replaceFirst('App\\', '')
+            ->replaceFirst('Models\\', '');
+
+        return database_path('factories/' . str_replace('\\', '/', $subDirectory) . 'Factory.php');
     }
 
     /**
@@ -255,6 +259,11 @@ class FactoryGenerator
      */
     protected function writeFactoryFile($path, $data, $modelClass)
     {
+        $factoryDirectory = dirname($path);
+        if (!File::exists($factoryDirectory)) {
+            File::makeDirectory($factoryDirectory);
+        }
+
         $definition = '';
         foreach ($data as $value) {
             $definition .= PHP_EOL . '            ' . $value . ',';
