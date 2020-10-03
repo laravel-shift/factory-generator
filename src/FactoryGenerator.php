@@ -69,8 +69,8 @@ class FactoryGenerator
     private function factoryPath($model)
     {
         $subDirectory = Str::of($model)
-            ->replaceFirst('App\\', '')
-            ->replaceFirst('Models\\', '');
+            ->replaceFirst('App\\Models\\', '')
+            ->replaceFirst('App\\', '');
 
         return database_path('factories/' . str_replace('\\', '/', $subDirectory) . 'Factory.php');
     }
