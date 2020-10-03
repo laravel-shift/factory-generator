@@ -259,10 +259,7 @@ class FactoryGenerator
      */
     protected function writeFactoryFile($path, $data, $modelClass)
     {
-        $factoryDirectory = dirname($path);
-        if (!File::exists($factoryDirectory)) {
-            File::makeDirectory($factoryDirectory);
-        }
+        File::ensureDirectoryExists(dirname($path));
 
         $definition = '';
         foreach ($data as $value) {
