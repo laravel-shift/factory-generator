@@ -6,7 +6,6 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 use ReflectionClass;
 use SplFileInfo;
 
@@ -65,7 +64,7 @@ class GenerateCommand extends Command
             });
         }
 
-        return collect(File::files($directory))->map(function (SplFileInfo $file) {
+        return collect(File::allFiles($directory))->map(function (SplFileInfo $file) {
             preg_match('/namespace\s.*/', $file->getContents(), $matches);
             return str_replace(
                     ['namespace ', ';'],

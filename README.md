@@ -38,7 +38,7 @@ php artisan generate:factory User
 By default _nullable_ columns are not included in the factory definition. If you want to include _nullable_ columns you may set the `--include-nullable` option (or `-i`).
 
 ```sh
-php artisan generate:factory -n User
+php artisan generate:factory -i User
 ```
 
 
