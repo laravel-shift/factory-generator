@@ -51,7 +51,10 @@ class GenerateCommand extends Command
     protected function loadModels(string $directory, array $models = []): Collection
     {
         if (!empty($models)) {
-            return collect($models)->map(function ($name) use ($directory) {
+
+            $dir = str_replace(app_path(), '', $directory);
+
+            return collect($models)->map(function ($name) use ($dir) {
                 if (strpos($name, '\\') !== false) {
                     return $name;
                 }
@@ -59,7 +62,7 @@ class GenerateCommand extends Command
                 return str_replace(
                     [DIRECTORY_SEPARATOR, basename($this->laravel->path()) . '\\'],
                     ['\\', $this->laravel->getNamespace()],
-                    basename($this->laravel->path()) . DIRECTORY_SEPARATOR . $name
+                    basename($this->laravel->path()) . $dir . DIRECTORY_SEPARATOR . $name
                 );
             });
         }
