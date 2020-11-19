@@ -39,14 +39,20 @@ class TypeGuesser
      */
     public function guess($name, Type $type, $size = null)
     {
-        $name = str_replace('_', '', Str::lower($name));
+        $name = Str::of($name)->lower();
 
-        if (!$size && $this->hasNativeResolverFor($name)) {
-            return $name;
+        if ($name->endsWith('_id')) {
+            return 'integer';
         }
+
+        $name = $name->replace('_', '')->__toString();
 
         if (self::$default !== $typeNameGuess = $this->guessBasedOnName($name, $size)) {
             return $typeNameGuess;
+        }
+
+        if ($this->hasNativeResolverFor($name)) {
+            return $name;
         }
 
         return $this->guessBasedOnType($type, $size);
