@@ -51,7 +51,6 @@ class GenerateCommand extends Command
     protected function loadModels(string $directory, array $models = []): Collection
     {
         if (!empty($models)) {
-
             $dir = str_replace(app_path(), '', $directory);
 
             return collect($models)->map(function ($name) use ($dir) {
@@ -68,13 +67,16 @@ class GenerateCommand extends Command
         }
 
         return collect(File::allFiles($directory))->map(function (SplFileInfo $file) {
-            preg_match('/namespace\s.*/', $file->getContents(), $matches);
+            if (!preg_match('/namespace\s.*/', $file->getContents(), $matches)) {
+                return null;
+            }
+
             return str_replace(
                     ['namespace ', ';'],
                     [''],
                     trim($matches[0])
                 ) . "\\{$file->getBasename('.php')}";
-        });
+        })->filter();
     }
 
     protected function resolveModelPath(): string
