@@ -67,7 +67,7 @@ class GenerateCommand extends Command
         }
 
         return collect(File::allFiles($directory))->map(function (SplFileInfo $file) {
-            if (!preg_match('/namespace\s.*/', $file->getContents(), $matches)) {
+            if (!preg_match('/^namespace\s.*/m', $file->getContents(), $matches)) {
                 return null;
             }
 
