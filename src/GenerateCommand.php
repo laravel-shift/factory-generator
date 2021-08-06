@@ -67,15 +67,11 @@ class GenerateCommand extends Command
         }
 
         return collect(File::allFiles($directory))->map(function (SplFileInfo $file) {
-            if (!preg_match('/namespace\s.*/', $file->getContents(), $matches)) {
+            if (!preg_match('/^namespace\s(\S+)/m', $file->getContents(), $matches)) {
                 return null;
             }
 
-            return str_replace(
-                    ['namespace ', ';'],
-                    [''],
-                    trim($matches[0])
-                ) . "\\{$file->getBasename('.php')}";
+            return $matches[1] . '\\' . $file->getBasename('.php');
         })->filter();
     }
 
