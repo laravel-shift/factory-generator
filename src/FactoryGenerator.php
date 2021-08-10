@@ -266,8 +266,12 @@ class FactoryGenerator
             $definition .= PHP_EOL . '            ' . $value . ',';
         }
 
+        $factoryQualifiedName = \Illuminate\Database\Eloquent\Factories\Factory::resolveFactoryName($modelClass);
+        $factoryNamespace = (string) Str::of($factoryQualifiedName)
+            ->replaceLast(class_basename($factoryQualifiedName), '')
+            ->rtrim('\\');
         $contents = File::get(__DIR__ . '/../stubs/factory.stub');
-        $contents = str_replace('{{ factoryNamespace }}', 'Database\\Factories', $contents);
+        $contents = str_replace('{{ factoryNamespace }}', $factoryNamespace, $contents);
         $contents = str_replace('{{ namespacedModel }}', $modelClass, $contents);
         $contents = str_replace('{{ model }}', class_basename($modelClass), $contents);
         $contents = str_replace('            //', trim($definition, PHP_EOL), $contents);
