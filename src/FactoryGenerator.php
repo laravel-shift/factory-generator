@@ -267,9 +267,7 @@ class FactoryGenerator
         }
 
         $factoryQualifiedName = \Illuminate\Database\Eloquent\Factories\Factory::resolveFactoryName($modelClass);
-        $factoryNamespace = (string) Str::of($factoryQualifiedName)
-            ->replaceLast(class_basename($factoryQualifiedName), '')
-            ->rtrim('\\');
+        $factoryNamespace = Str::beforeLast($factoryQualifiedName, '\\');
         $contents = File::get(__DIR__ . '/../stubs/factory.stub');
         $contents = str_replace('{{ factoryNamespace }}', $factoryNamespace, $contents);
         $contents = str_replace('{{ namespacedModel }}', $modelClass, $contents);
