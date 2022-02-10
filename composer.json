@@ -5,9 +5,9 @@
     "license": "MIT",
     "keywords": ["laravel", "factory", "model", "testing"],
     "require": {
-        "illuminate/support": "^8.0",
+        "illuminate/support": "^8.0|^9.0",
         "fakerphp/faker": "^1.9.1",
-        "naoray/eloquent-model-analyzer": "^2.0",
+        "naoray/eloquent-model-analyzer": "^2.0|^3.0",
         "nikic/php-parser": "^4.0"
     },
     "require-dev": {
