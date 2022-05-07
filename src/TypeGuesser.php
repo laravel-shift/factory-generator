@@ -18,7 +18,7 @@ class TypeGuesser
     /**
      * @var string
      */
-    protected static $default = 'word';
+    protected static $default = 'word()';
 
     /**
      * Create a new TypeGuesser instance.
@@ -42,17 +42,18 @@ class TypeGuesser
         $name = Str::of($name)->lower();
 
         if ($name->endsWith('_id')) {
-            return 'integer';
+            return 'integer()';
         }
 
         $name = $name->replace('_', '')->__toString();
+        $typeNameGuess = $this->guessBasedOnName($name, $size);
 
-        if (self::$default !== $typeNameGuess = $this->guessBasedOnName($name, $size)) {
+        if (self::$default !== $typeNameGuess) {
             return $typeNameGuess;
         }
 
         if ($this->hasNativeResolverFor($name)) {
-            return $name;
+            return $name . '()';
         }
 
         return $this->guessBasedOnType($type, $size);
@@ -70,28 +71,28 @@ class TypeGuesser
     {
         switch ($name) {
             case 'login':
-                return 'userName';
+                return 'userName()';
             case 'emailaddress':
-                return 'email';
+                return 'email()';
             case 'phone':
             case 'telephone':
             case 'telnumber':
-                return 'phoneNumber';
+                return 'phoneNumber()';
             case 'town':
-                return 'city';
+                return 'city()';
             case 'zipcode':
-                return 'postcode';
+                return 'postcode()';
             case 'county':
                 return $this->predictCountyType();
             case 'country':
                 return $this->predictCountryType($size);
             case 'currency':
-                return 'currencyCode';
+                return 'currencyCode()';
             case 'website':
-                return 'url';
+                return 'url()';
             case 'companyname':
             case 'employer':
-                return 'company';
+                return 'company()';
             case 'title':
                 return $this->predictTitleType($size);
             default:
@@ -131,25 +132,25 @@ class TypeGuesser
 
         switch ($typeName) {
             case Types::BOOLEAN:
-                return 'boolean';
+                return 'boolean()';
             case Types::BIGINT:
             case Types::INTEGER:
             case Types::SMALLINT:
-                return 'randomNumber' . ($size ? "($size)" : '');
+                return 'randomNumber(' . $size . ')';
             case Types::DATE_MUTABLE:
             case Types::DATE_IMMUTABLE:
-                return 'date';
+                return 'date()';
             case Types::DATETIME_MUTABLE:
             case Types::DATETIME_IMMUTABLE:
-                return 'dateTime';
+                return 'dateTime()';
             case Types::DECIMAL:
             case Types::FLOAT:
-                return 'randomFloat' . ($size ? "($size)" : '');
+                return 'randomFloat(' . $size . ')';
             case Types::TEXT:
-                return 'text';
+                return 'text()';
             case Types::TIME_MUTABLE:
             case Types::TIME_IMMUTABLE:
-                return 'time';
+                return 'time()';
             default:
                 return self::$default;
         }
@@ -161,10 +162,10 @@ class TypeGuesser
     protected function predictCountyType()
     {
         if ('en_US' == $this->generator->locale) {
-            return "sprintf('%s County', \$faker->city)";
+            return "sprintf('%s County', \$faker->city())";
         }
 
-        return 'state';
+        return 'state()';
     }
 
     /**
@@ -176,15 +177,15 @@ class TypeGuesser
     {
         switch ($size) {
             case 2:
-                return 'countryCode';
+                return 'countryCode()';
             case 3:
-                return 'countryISOAlpha3';
+                return 'countryISOAlpha3()';
             case 5:
             case 6:
-                return 'locale';
+                return 'locale()';
         }
 
-        return 'country';
+        return 'country()';
     }
 
     /**
@@ -195,9 +196,9 @@ class TypeGuesser
     protected function predictTitleType($size)
     {
         if (null === $size || $size <= 10) {
-            return 'title';
+            return 'title()';
         }
 
-        return 'sentence';
+        return 'sentence()';
     }
 }

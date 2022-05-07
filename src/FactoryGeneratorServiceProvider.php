@@ -14,8 +14,4 @@ class FactoryGeneratorServiceProvider extends ServiceProvider
             ]);
         }
     }
-
-    public function register()
-    {
-    }
 }
