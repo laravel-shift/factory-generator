@@ -70,7 +70,7 @@ class TypeGuesser
      *
      * @return string
      */
-    private function guessBasedOnName($name, $size = null)
+    protected function guessBasedOnName($name, $size = null)
     {
         switch ($name) {
             case 'login':
