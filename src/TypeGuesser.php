@@ -32,7 +32,7 @@ class TypeGuesser
 
     /**
      * @param string $name
-     * @param Doctrine\DBAL\Types\Type $type
+     * @param Type $type
      * @param int|null $size Length of field, if known
      *
      * @return string
