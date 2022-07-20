@@ -88,13 +88,16 @@ class TypeGuesser
             case 'phone':
             case 'telephone':
             case 'telnumber':
-            case 'phonenumber';
+            case 'phonenumber':
                 return 'phoneNumber()';
             case 'town':
                 return 'city()';
+            case 'postalcode':
+            case 'postal_code':
             case 'zipcode':
             case 'zip_code':
                 return 'postcode()';
+            case 'province':
             case 'county':
                 return $this->predictCountyType();
             case 'country':

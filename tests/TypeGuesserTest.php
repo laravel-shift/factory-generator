@@ -119,6 +119,7 @@ class TypeGuesserTest extends TestCase
     public function it_can_guess_phone_number_values()
     {
         $this->assertEquals('phoneNumber()', $this->typeGuesser->guess('phonenumber', $this->getType()));
+        $this->assertEquals('phoneNumber()', $this->typeGuesser->guess('phone_number', $this->getType()));
         $this->assertEquals('phoneNumber()', $this->typeGuesser->guess('phone', $this->getType()));
         $this->assertEquals('phoneNumber()', $this->typeGuesser->guess('telephone', $this->getType()));
         $this->assertEquals('phoneNumber()', $this->typeGuesser->guess('telnumber', $this->getType()));
@@ -149,12 +150,16 @@ class TypeGuesserTest extends TestCase
     {
         $this->assertEquals('postcode()', $this->typeGuesser->guess('postcode', $this->getType()));
         $this->assertEquals('postcode()', $this->typeGuesser->guess('zipcode', $this->getType()));
+        $this->assertEquals('postcode()', $this->typeGuesser->guess('postalcode', $this->getType()));
+        $this->assertEquals('postcode()', $this->typeGuesser->guess('postal_code', $this->getType()));
+        $this->assertEquals('postcode()', $this->typeGuesser->guess('postalCode', $this->getType()));
     }
 
     /** @test */
     public function it_can_guess_state_values()
     {
         $this->assertEquals('state()', $this->typeGuesser->guess('state', $this->getType()));
+        $this->assertEquals('state()', $this->typeGuesser->guess('province', $this->getType()));
         $this->assertEquals('state()', $this->typeGuesser->guess('county', $this->getType()));
     }
 
