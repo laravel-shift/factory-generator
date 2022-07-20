@@ -176,6 +176,8 @@ class TypeGuesser
 
     /**
      * Predicts county type by locale.
+     *
+     * @return string
      */
     protected function predictCountyType()
     {
@@ -190,6 +192,8 @@ class TypeGuesser
      * Predicts country code based on $size.
      *
      * @param int $size
+     *
+     * @return string
      */
     protected function predictCountryType($size)
     {
@@ -210,6 +214,8 @@ class TypeGuesser
      * Predicts type of title by $size.
      *
      * @param int $size
+     *
+     * @return string
      */
     protected function predictTitleType($size)
     {
