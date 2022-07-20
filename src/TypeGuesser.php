@@ -27,7 +27,7 @@ class TypeGuesser
 
     /**
      * @param string $name
-     * @param Type $type
+     * @param \Doctrine\DBAL\Types\Type $type
      * @param int|null $size Length of field, if known
      *
      * @return string
