@@ -16,11 +16,6 @@ class TypeGuesser
     protected $generator;
 
     /**
-     * @var string
-     */
-    protected static $default = 'word()';
-
-    /**
      * Create a new TypeGuesser instance.
      *
      * @param \Faker\Generator $generator
@@ -32,7 +27,7 @@ class TypeGuesser
 
     /**
      * @param string $name
-     * @param Doctrine\DBAL\Types\Type $type
+     * @param \Doctrine\DBAL\Types\Type $type
      * @param int|null $size Length of field, if known
      *
      * @return string
@@ -45,9 +40,7 @@ class TypeGuesser
             return 'integer()';
         }
 
-        $typeNameGuess = $this->guessBasedOnName($name->__toString(), $size);
-
-        if (self::$default !== $typeNameGuess) {
+        if ($typeNameGuess = $this->guessBasedOnName($name->__toString(), $size)) {
             return $typeNameGuess;
         }
 
@@ -68,9 +61,9 @@ class TypeGuesser
      * @param string $name
      * @param int|null $size
      *
-     * @return string
+     * @return string|null
      */
-    private function guessBasedOnName($name, $size = null)
+    protected function guessBasedOnName($name, $size = null)
     {
         switch ($name) {
             case 'login':
@@ -114,7 +107,7 @@ class TypeGuesser
             case 'title':
                 return $this->predictTitleType($size);
             default:
-                return self::$default;
+                return null;
         }
     }
 
@@ -170,12 +163,14 @@ class TypeGuesser
             case Types::TIME_IMMUTABLE:
                 return 'time()';
             default:
-                return self::$default;
+                return 'word()';
         }
     }
 
     /**
      * Predicts county type by locale.
+     *
+     * @return string
      */
     protected function predictCountyType()
     {
@@ -190,6 +185,8 @@ class TypeGuesser
      * Predicts country code based on $size.
      *
      * @param int $size
+     *
+     * @return string
      */
     protected function predictCountryType($size)
     {
@@ -210,6 +207,8 @@ class TypeGuesser
      * Predicts type of title by $size.
      *
      * @param int $size
+     *
+     * @return string
      */
     protected function predictTitleType($size)
     {
