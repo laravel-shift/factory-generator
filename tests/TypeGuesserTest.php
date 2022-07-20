@@ -88,22 +88,22 @@ class TypeGuesserTest extends TestCase
     /** @test */
     public function it_can_guess_first_name_values()
     {
-        $this->assertEquals('firstname()', $this->typeGuesser->guess('first_name', $this->getType()));
-        $this->assertEquals('firstname()', $this->typeGuesser->guess('firstname', $this->getType()));
+        $this->assertEquals('firstName()', $this->typeGuesser->guess('first_name', $this->getType()));
+        $this->assertEquals('firstName()', $this->typeGuesser->guess('firstname', $this->getType()));
     }
 
     /** @test */
     public function it_can_guess_last_name_values()
     {
-        $this->assertEquals('lastname()', $this->typeGuesser->guess('last_name', $this->getType()));
-        $this->assertEquals('lastname()', $this->typeGuesser->guess('lastname', $this->getType()));
+        $this->assertEquals('lastName()', $this->typeGuesser->guess('last_name', $this->getType()));
+        $this->assertEquals('lastName()', $this->typeGuesser->guess('lastname', $this->getType()));
     }
 
     /** @test */
     public function it_can_guess_user_name_values()
     {
-        $this->assertEquals('username()', $this->typeGuesser->guess('username', $this->getType()));
-        $this->assertEquals('username()', $this->typeGuesser->guess('user_name', $this->getType()));
+        $this->assertEquals('userName()', $this->typeGuesser->guess('username', $this->getType()));
+        $this->assertEquals('userName()', $this->typeGuesser->guess('user_name', $this->getType()));
         $this->assertEquals('userName()', $this->typeGuesser->guess('login', $this->getType()));
     }
 
@@ -118,7 +118,7 @@ class TypeGuesserTest extends TestCase
     /** @test */
     public function it_can_guess_phone_number_values()
     {
-        $this->assertEquals('phonenumber()', $this->typeGuesser->guess('phonenumber', $this->getType()));
+        $this->assertEquals('phoneNumber()', $this->typeGuesser->guess('phonenumber', $this->getType()));
         $this->assertEquals('phoneNumber()', $this->typeGuesser->guess('phone', $this->getType()));
         $this->assertEquals('phoneNumber()', $this->typeGuesser->guess('telephone', $this->getType()));
         $this->assertEquals('phoneNumber()', $this->typeGuesser->guess('telnumber', $this->getType()));
@@ -140,8 +140,8 @@ class TypeGuesserTest extends TestCase
     /** @test */
     public function it_can_guess_street_address_values()
     {
-        $this->assertEquals('streetaddress()', $this->typeGuesser->guess('street_address', $this->getType()));
-        $this->assertEquals('streetaddress()', $this->typeGuesser->guess('streetAddress', $this->getType()));
+        $this->assertEquals('streetAddress()', $this->typeGuesser->guess('street_address', $this->getType()));
+        $this->assertEquals('streetAddress()', $this->typeGuesser->guess('streetAddress', $this->getType()));
     }
 
     /** @test */
@@ -178,8 +178,8 @@ class TypeGuesserTest extends TestCase
     public function it_can_guess_currency_code_values()
     {
         $this->assertEquals('currencyCode()', $this->typeGuesser->guess('currency', $this->getType()));
-        $this->assertEquals('currencycode()', $this->typeGuesser->guess('currencycode', $this->getType()));
-        $this->assertEquals('currencycode()', $this->typeGuesser->guess('currency_code', $this->getType()));
+        $this->assertEquals('currencyCode()', $this->typeGuesser->guess('currencycode', $this->getType()));
+        $this->assertEquals('currencyCode()', $this->typeGuesser->guess('currency_code', $this->getType()));
     }
 
     /** @test */
@@ -187,6 +187,14 @@ class TypeGuesserTest extends TestCase
     {
         $this->assertEquals('url()', $this->typeGuesser->guess('website', $this->getType()));
         $this->assertEquals('url()', $this->typeGuesser->guess('url', $this->getType()));
+        $this->assertEquals('url()', $this->typeGuesser->guess('twitter_url', $this->getType()));
+        $this->assertEquals('url()', $this->typeGuesser->guess('endpoint_url', $this->getType()));
+    }
+
+    /** @test */
+    public function it_can_guess_image_url_values()
+    {
+        $this->assertEquals('imageUrl()', $this->typeGuesser->guess('image_url', $this->getType()));
     }
 
     /** @test */
@@ -218,14 +226,15 @@ class TypeGuesserTest extends TestCase
     }
 
     /** @test */
-    public function it_returns_word_as_default_value()
+    public function it_can_guess_coordinates_based_on_their_names()
     {
-        $this->assertEquals('word()', $this->typeGuesser->guess('not_guessable', $this->getType()));
+        $this->assertEquals('latitude()', $this->typeGuesser->guess('latitude', $this->getType()));
+        $this->assertEquals('longitude()', $this->typeGuesser->guess('longitude', $this->getType()));
     }
 
     /** @test */
-    public function it_can_guess_properties_based_on_their_names()
+    public function it_returns_word_as_default_value()
     {
-        $this->assertEquals('latitude()', $this->typeGuesser->guess('latitude', $this->getType()));
+        $this->assertEquals('word()', $this->typeGuesser->guess('not_guessable', $this->getType()));
     }
 }

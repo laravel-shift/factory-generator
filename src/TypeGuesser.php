@@ -2,11 +2,11 @@
 
 namespace Shift\FactoryGenerator;
 
-use Illuminate\Support\Str;
 use Doctrine\DBAL\Types\Type;
-use Faker\Generator as Faker;
-use InvalidArgumentException;
 use Doctrine\DBAL\Types\Types;
+use Faker\Generator as Faker;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class TypeGuesser
 {
@@ -31,9 +31,9 @@ class TypeGuesser
     }
 
     /**
-     * @param string                   $name
+     * @param string $name
      * @param Doctrine\DBAL\Types\Type $type
-     * @param int|null                 $size Length of field, if known
+     * @param int|null $size Length of field, if known
      *
      * @return string
      */
@@ -45,15 +45,18 @@ class TypeGuesser
             return 'integer()';
         }
 
-        $name = $name->replace('_', '')->__toString();
-        $typeNameGuess = $this->guessBasedOnName($name, $size);
+        $typeNameGuess = $this->guessBasedOnName($name->__toString(), $size);
 
         if (self::$default !== $typeNameGuess) {
             return $typeNameGuess;
         }
 
-        if ($this->hasNativeResolverFor($name)) {
-            return $name . '()';
+        if ($this->hasNativeResolverFor($name->camel()->__toString())) {
+            return $name->camel()->__toString() . '()';
+        }
+
+        if ($name->endsWith('_url')) {
+            return 'url()';
         }
 
         return $this->guessBasedOnType($type, $size);
@@ -62,7 +65,7 @@ class TypeGuesser
     /**
      * Get type guess.
      *
-     * @param string   $name
+     * @param string $name
      * @param int|null $size
      *
      * @return string
@@ -71,26 +74,38 @@ class TypeGuesser
     {
         switch ($name) {
             case 'login':
+            case 'username':
                 return 'userName()';
+            case 'firstname':
+                return 'firstName()';
+            case 'lastname':
+                return 'lastName()';
+            case 'streetaddress':
+                return 'streetAddress()';
+            case 'email_address':
             case 'emailaddress':
                 return 'email()';
             case 'phone':
             case 'telephone':
             case 'telnumber':
+            case 'phonenumber';
                 return 'phoneNumber()';
             case 'town':
                 return 'city()';
             case 'zipcode':
+            case 'zip_code':
                 return 'postcode()';
             case 'county':
                 return $this->predictCountyType();
             case 'country':
                 return $this->predictCountryType($size);
             case 'currency':
+            case 'currencycode':
                 return 'currencyCode()';
             case 'website':
                 return 'url()';
             case 'companyname':
+            case 'company_name':
             case 'employer':
                 return 'company()';
             case 'title':
@@ -121,7 +136,7 @@ class TypeGuesser
     /**
      * Try to guess the right faker method for the given type.
      *
-     * @param Type     $type
+     * @param Type $type
      * @param int|null $size
      *
      * @return string
