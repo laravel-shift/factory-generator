@@ -45,9 +45,7 @@ class TypeGuesser
             return 'integer()';
         }
 
-        $typeNameGuess = $this->guessBasedOnName($name->__toString(), $size);
-
-        if (self::$default !== $typeNameGuess) {
+        if ($typeNameGuess = $this->guessBasedOnName($name->__toString(), $size)) {
             return $typeNameGuess;
         }
 
@@ -68,7 +66,7 @@ class TypeGuesser
      * @param string $name
      * @param int|null $size
      *
-     * @return string
+     * @return string|null
      */
     protected function guessBasedOnName($name, $size = null)
     {
@@ -114,7 +112,7 @@ class TypeGuesser
             case 'title':
                 return $this->predictTitleType($size);
             default:
-                return self::$default;
+                return null;
         }
     }
 
