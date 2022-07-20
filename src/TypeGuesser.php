@@ -5,8 +5,8 @@ namespace Shift\FactoryGenerator;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;
 use Faker\Generator as Faker;
+use Faker\Provider\Base;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
 
 class TypeGuesser
 {
@@ -19,6 +19,11 @@ class TypeGuesser
      * @var string
      */
     protected static $default = 'word()';
+
+    /**
+     * @var array
+     */
+    protected $fakerMethodNames = [];
 
     /**
      * Create a new TypeGuesser instance.
@@ -45,12 +50,14 @@ class TypeGuesser
             return 'integer()';
         }
 
-        if ($typeNameGuess = $this->guessBasedOnName($name->__toString(), $size)) {
+        $lookup = $name->replace('_', '');
+
+        if ($typeNameGuess = $this->guessBasedOnName($lookup, $size)) {
             return $typeNameGuess;
         }
 
-        if ($this->hasNativeResolverFor($name->camel()->__toString())) {
-            return $name->camel()->__toString() . '()';
+        if ($nativeName = $this->nativeNameFor($lookup)) {
+            return $nativeName . '()';
         }
 
         if ($name->endsWith('_url')) {
@@ -61,6 +68,37 @@ class TypeGuesser
     }
 
     /**
+     * Get native name for the given string.
+     *
+     * @param string $lookup
+     *
+     * @return string|null
+     */
+    protected function nativeNameFor(string $lookup)
+    {
+        if (empty($this->fakerMethodNames)) {
+            $this->fakerMethodNames = collect($this->generator->getProviders())
+                ->flatMap(function(Base $provider) {
+                    return get_class_methods($provider);
+                })
+                ->reject(function(string $methodName) {
+                    return Str::startsWith($methodName, '__');
+                })
+                ->unique()
+                ->mapWithKeys(function(string $methodName) {
+                    return [Str::lower($methodName) => $methodName];
+                })
+                ->toArray();
+        }
+
+        if (isset($this->fakerMethodNames[$lookup])) {
+            return $this->fakerMethodNames[$lookup];
+        }
+
+        return null;
+    }
+
+    /**
      * Get type guess.
      *
      * @param string $name
@@ -68,32 +106,22 @@ class TypeGuesser
      *
      * @return string|null
      */
-    protected function guessBasedOnName($name, $size = null)
+    protected function guessBasedOnName(string $name, $size = null)
     {
         switch ($name) {
             case 'login':
-            case 'username':
                 return 'userName()';
-            case 'firstname':
-                return 'firstName()';
-            case 'lastname':
-                return 'lastName()';
-            case 'streetaddress':
-                return 'streetAddress()';
-            case 'email_address':
             case 'emailaddress':
                 return 'email()';
             case 'phone':
             case 'telephone':
             case 'telnumber':
-            case 'phonenumber':
                 return 'phoneNumber()';
             case 'town':
                 return 'city()';
             case 'postalcode':
             case 'postal_code':
             case 'zipcode':
-            case 'zip_code':
                 return 'postcode()';
             case 'province':
             case 'county':
@@ -101,12 +129,10 @@ class TypeGuesser
             case 'country':
                 return $this->predictCountryType($size);
             case 'currency':
-            case 'currencycode':
                 return 'currencyCode()';
             case 'website':
                 return 'url()';
             case 'companyname':
-            case 'company_name':
             case 'employer':
                 return 'company()';
             case 'title':
@@ -114,24 +140,6 @@ class TypeGuesser
             default:
                 return null;
         }
-    }
-
-    /**
-     * Check if faker instance has a native resolver for the given property.
-     *
-     * @param string $property
-     *
-     * @return bool
-     */
-    protected function hasNativeResolverFor($property)
-    {
-        try {
-            $this->generator->getFormatter($property);
-        } catch (InvalidArgumentException $e) {
-            return false;
-        }
-
-        return true;
     }
 
     /**
