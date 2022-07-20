@@ -16,11 +16,6 @@ class TypeGuesser
     protected $generator;
 
     /**
-     * @var string
-     */
-    protected static $default = 'word()';
-
-    /**
      * @var array
      */
     protected $fakerMethodNames = [];
@@ -176,7 +171,7 @@ class TypeGuesser
             case Types::TIME_IMMUTABLE:
                 return 'time()';
             default:
-                return self::$default;
+                return 'word()';
         }
     }
 
