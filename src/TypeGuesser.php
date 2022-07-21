@@ -5,8 +5,8 @@ namespace Shift\FactoryGenerator;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;
 use Faker\Generator as Faker;
+use Faker\Provider\Base;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
 
 class TypeGuesser
 {
@@ -44,8 +44,8 @@ class TypeGuesser
             return $typeNameGuess;
         }
 
-        if ($this->hasNativeResolverFor($name->camel()->__toString())) {
-            return $name->camel()->__toString() . '()';
+        if ($nativeName = $this->nativeNameFor($name->replace('_', ''))) {
+            return $nativeName . '()';
         }
 
         if ($name->endsWith('_url')) {
@@ -67,21 +67,13 @@ class TypeGuesser
     {
         switch ($name) {
             case 'login':
-            case 'username':
                 return 'userName()';
-            case 'firstname':
-                return 'firstName()';
-            case 'lastname':
-                return 'lastName()';
-            case 'streetaddress':
-                return 'streetAddress()';
             case 'email_address':
             case 'emailaddress':
                 return 'email()';
             case 'phone':
             case 'telephone':
             case 'telnumber':
-            case 'phonenumber':
                 return 'phoneNumber()';
             case 'town':
                 return 'city()';
@@ -96,7 +88,6 @@ class TypeGuesser
             case 'country':
                 return $this->predictCountryType($size);
             case 'currency':
-            case 'currencycode':
                 return 'currencyCode()';
             case 'website':
                 return 'url()';
@@ -112,21 +103,49 @@ class TypeGuesser
     }
 
     /**
-     * Check if faker instance has a native resolver for the given property.
+     * Get native name for the given string.
      *
-     * @param string $property
+     * @param string $lookup
      *
-     * @return bool
+     * @return string|null
      */
-    protected function hasNativeResolverFor($property)
+    protected function nativeNameFor(string $lookup)
     {
-        try {
-            $this->generator->getFormatter($property);
-        } catch (InvalidArgumentException $e) {
-            return false;
+        static $fakerMethodNames = [];
+
+        if (empty($fakerMethodNames)) {
+            $fakerMethodNames = collect($this->generator->getProviders())
+                ->flatMap(function(Base $provider) {
+                    return $this->getNamesFromProvider($provider);
+                })
+                ->unique()
+                ->toArray();
         }
 
-        return true;
+        if (isset($fakerMethodNames[$lookup])) {
+            return $fakerMethodNames[$lookup];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get public methods as a lookup pair.
+     *
+     * @param \Faker\Provider\Base $provider
+     *
+     * @return array
+     */
+    protected function getNamesFromProvider(Base $provider)
+    {
+        return collect(get_class_methods($provider))
+            ->reject(function(string $methodName) {
+                return Str::startsWith($methodName, '__');
+            })
+            ->mapWithKeys(function(string $methodName) {
+                return [Str::lower($methodName) => $methodName];
+            })
+            ->toArray();
     }
 
     /**
