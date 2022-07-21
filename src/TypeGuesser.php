@@ -72,21 +72,13 @@ class TypeGuesser
     {
         switch ($name) {
             case 'login':
-            case 'username':
                 return 'userName()';
-            case 'firstname':
-                return 'firstName()';
-            case 'lastname':
-                return 'lastName()';
-            case 'streetaddress':
-                return 'streetAddress()';
             case 'email_address':
             case 'emailaddress':
                 return 'email()';
             case 'phone':
             case 'telephone':
             case 'telnumber':
-            case 'phonenumber':
                 return 'phoneNumber()';
             case 'town':
                 return 'city()';
@@ -101,7 +93,6 @@ class TypeGuesser
             case 'country':
                 return $this->predictCountryType($size);
             case 'currency':
-            case 'currencycode':
                 return 'currencyCode()';
             case 'website':
                 return 'url()';
