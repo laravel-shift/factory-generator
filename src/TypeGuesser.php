@@ -16,11 +16,6 @@ class TypeGuesser
     protected $generator;
 
     /**
-     * @var array
-     */
-    protected $fakerMethodNames = [];
-
-    /**
      * Create a new TypeGuesser instance.
      *
      * @param \Faker\Generator $generator
@@ -116,8 +111,10 @@ class TypeGuesser
      */
     protected function nativeNameFor(string $lookup)
     {
-        if (empty($this->fakerMethodNames)) {
-            $this->fakerMethodNames = collect($this->generator->getProviders())
+        static $fakerMethodNames = [];
+
+        if (empty($fakerMethodNames)) {
+            $fakerMethodNames = collect($this->generator->getProviders())
                 ->flatMap(function(Base $provider) {
                     return $this->getNamesFromProvider($provider);
                 })
@@ -125,8 +122,8 @@ class TypeGuesser
                 ->toArray();
         }
 
-        if (isset($this->fakerMethodNames[$lookup])) {
-            return $this->fakerMethodNames[$lookup];
+        if (isset($fakerMethodNames[$lookup])) {
+            return $fakerMethodNames[$lookup];
         }
 
         return null;
