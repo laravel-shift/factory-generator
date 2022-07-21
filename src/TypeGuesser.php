@@ -119,7 +119,7 @@ class TypeGuesser
         if (empty($this->fakerMethodNames)) {
             $this->fakerMethodNames = collect($this->generator->getProviders())
                 ->flatMap(function(Base $provider) {
-                    return $this->getNamesFromProvidor($provider);
+                    return $this->getNamesFromProvider($provider);
                 })
                 ->unique()
                 ->toArray();
@@ -139,7 +139,7 @@ class TypeGuesser
      *
      * @return array
      */
-    protected function getNamesFromProvidor(Base $provider)
+    protected function getNamesFromProvider(Base $provider)
     {
         return collect(get_class_methods($provider))
             ->reject(function(string $methodName) {
