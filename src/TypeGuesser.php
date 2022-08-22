@@ -37,7 +37,7 @@ class TypeGuesser
         $name = Str::of($name)->lower();
 
         if ($name->endsWith('_id')) {
-            return 'integer()';
+            return 'randomDigitNotNull()';
         }
 
         if ($typeNameGuess = $this->guessBasedOnName($name->__toString(), $size)) {
