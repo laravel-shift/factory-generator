@@ -3,12 +3,7 @@
     "description": "Generate factories from existing models",
     "type": "package",
     "license": "MIT",
-    "keywords": [
-        "laravel",
-        "factory",
-        "model",
-        "testing"
-    ],
+    "keywords": ["laravel", "factory", "model", "testing"],
     "require": {
         "illuminate/support": "^9.0|^10.0",
         "fakerphp/faker": "^1.9.1",
@@ -16,7 +11,7 @@
         "nikic/php-parser": "^4.15"
     },
     "require-dev": {
-        "orchestra/testbench": ^7.0|"^8.0"
+        "orchestra/testbench": ^7.0|^8.0"
     },
     "autoload": {
         "psr-4": {
