@@ -10,13 +10,13 @@
         "testing"
     ],
     "require": {
-        "illuminate/support": "^10.0",
+        "illuminate/support": "^9.0|^10.0",
         "fakerphp/faker": "^1.9.1",
-        "naoray/eloquent-model-analyzer": "^3.0.1",
+        "naoray/eloquent-model-analyzer": "^3.0|^4.0",
         "nikic/php-parser": "^4.15"
     },
     "require-dev": {
-        "orchestra/testbench": "^8.0"
+        "orchestra/testbench": ^7.0|"^8.0"
     },
     "autoload": {
         "psr-4": {
