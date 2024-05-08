@@ -23,8 +23,7 @@ class TypeGuesserTest extends TestCase
     /**
      * Get type class for type string.
      *
-     * @param string $type
-     *
+     * @param  string  $type
      * @return \Doctrine\DBAL\Types\Types
      */
     protected function getType($type = Types::STRING)

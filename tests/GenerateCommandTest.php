@@ -29,12 +29,12 @@ class GenerateCommandTest extends TestCase
     /**
      * Set up the database.
      *
-     * @param \Illuminate\Foundation\Application $app
+     * @param  \Illuminate\Foundation\Application  $app
      */
     protected function setUpDatabase($app)
     {
         $this->loadMigrationsFrom([
-            '--path' => realpath(__DIR__ . '/migrations'),
+            '--path' => realpath(__DIR__.'/migrations'),
             '--realpath' => true,
         ]);
     }
@@ -44,7 +44,7 @@ class GenerateCommandTest extends TestCase
     {
         $this->artisan('generate:factory', [
             '--no-interaction' => true,
-            '--path' => $directory = __DIR__ . '/Fixtures/NonExistent',
+            '--path' => $directory = __DIR__.'/Fixtures/NonExistent',
             '--include-nullable' => true,
         ])
             ->expectsOutput("No files in [$directory] were found!")
@@ -57,7 +57,7 @@ class GenerateCommandTest extends TestCase
     {
         $this->artisan('generate:factory', [
             '--no-interaction' => true,
-            '--path' => __DIR__ . '/Fixtures/Models',
+            '--path' => __DIR__.'/Fixtures/Models',
             '--include-nullable' => true,
         ])
             ->expectsOutput('3 factories created')
@@ -85,7 +85,6 @@ class GenerateCommandTest extends TestCase
         $this->assertFileExists(database_path('factories/CarFactory.php'));
         $this->assertFileExists(database_path('factories/HabitFactory.php'));
     }
-
 
     /** @test */
     public function it_asks_if_a_model_shall_be_created_if_it_does_not_yet_exist()
@@ -223,7 +222,7 @@ class GenerateCommandTest extends TestCase
         $this->assertFileExists($path = database_path('factories/CarFactory.php'));
         $this->assertTrue(Str::contains(
             File::get($path),
-            "'previous_owner_id' => factory(" . User::class . '::class)->lazy(),'
+            "'previous_owner_id' => factory(".User::class.'::class)->lazy(),'
         ));
     }
 

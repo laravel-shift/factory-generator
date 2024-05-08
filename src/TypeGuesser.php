@@ -17,8 +17,6 @@ class TypeGuesser
 
     /**
      * Create a new TypeGuesser instance.
-     *
-     * @param \Faker\Generator $generator
      */
     public function __construct(Faker $generator)
     {
@@ -26,10 +24,8 @@ class TypeGuesser
     }
 
     /**
-     * @param string $name
-     * @param \Doctrine\DBAL\Types\Type $type
-     * @param int|null $size Length of field, if known
-     *
+     * @param  string  $name
+     * @param  int|null  $size  Length of field, if known
      * @return string
      */
     public function guess($name, Type $type, $size = null)
@@ -45,7 +41,7 @@ class TypeGuesser
         }
 
         if ($nativeName = $this->nativeNameFor($name->replace('_', ''))) {
-            return $nativeName . '()';
+            return $nativeName.'()';
         }
 
         if ($name->endsWith('_url')) {
@@ -58,9 +54,8 @@ class TypeGuesser
     /**
      * Get type guess.
      *
-     * @param string $name
-     * @param int|null $size
-     *
+     * @param  string  $name
+     * @param  int|null  $size
      * @return string|null
      */
     protected function guessBasedOnName($name, $size = null)
@@ -105,7 +100,6 @@ class TypeGuesser
     /**
      * Get native name for the given string.
      *
-     * @param string $lookup
      *
      * @return string|null
      */
@@ -115,7 +109,7 @@ class TypeGuesser
 
         if (empty($fakerMethodNames)) {
             $fakerMethodNames = collect($this->generator->getProviders())
-                ->flatMap(function(Base $provider) {
+                ->flatMap(function (Base $provider) {
                     return $this->getNamesFromProvider($provider);
                 })
                 ->unique()
@@ -132,17 +126,16 @@ class TypeGuesser
     /**
      * Get public methods as a lookup pair.
      *
-     * @param \Faker\Provider\Base $provider
      *
      * @return array
      */
     protected function getNamesFromProvider(Base $provider)
     {
         return collect(get_class_methods($provider))
-            ->reject(function(string $methodName) {
+            ->reject(function (string $methodName) {
                 return Str::startsWith($methodName, '__');
             })
-            ->mapWithKeys(function(string $methodName) {
+            ->mapWithKeys(function (string $methodName) {
                 return [Str::lower($methodName) => $methodName];
             })
             ->toArray();
@@ -151,9 +144,7 @@ class TypeGuesser
     /**
      * Try to guess the right faker method for the given type.
      *
-     * @param Type $type
-     * @param int|null $size
-     *
+     * @param  int|null  $size
      * @return string
      */
     protected function guessBasedOnType(Type $type, $size)
@@ -166,7 +157,7 @@ class TypeGuesser
             case Types::BIGINT:
             case Types::INTEGER:
             case Types::SMALLINT:
-                return 'randomNumber(' . $size . ')';
+                return 'randomNumber('.$size.')';
             case Types::DATE_MUTABLE:
             case Types::DATE_IMMUTABLE:
                 return 'date()';
@@ -175,7 +166,7 @@ class TypeGuesser
                 return 'dateTime()';
             case Types::DECIMAL:
             case Types::FLOAT:
-                return 'randomFloat(' . $size . ')';
+                return 'randomFloat('.$size.')';
             case Types::TEXT:
                 return 'text()';
             case Types::TIME_MUTABLE:
@@ -193,7 +184,7 @@ class TypeGuesser
      */
     protected function predictCountyType()
     {
-        if ('en_US' == $this->generator->locale) {
+        if ($this->generator->locale == 'en_US') {
             return "sprintf('%s County', \$faker->city())";
         }
 
@@ -203,8 +194,7 @@ class TypeGuesser
     /**
      * Predicts country code based on $size.
      *
-     * @param int $size
-     *
+     * @param  int  $size
      * @return string
      */
     protected function predictCountryType($size)
@@ -225,13 +215,12 @@ class TypeGuesser
     /**
      * Predicts type of title by $size.
      *
-     * @param int $size
-     *
+     * @param  int  $size
      * @return string
      */
     protected function predictTitleType($size)
     {
-        if (null === $size || $size <= 10) {
+        if ($size === null || $size <= 10) {
             return 'title()';
         }
 
