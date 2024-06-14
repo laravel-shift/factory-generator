@@ -3,14 +3,10 @@
 namespace Shift\FactoryGenerator;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Naoray\EloquentModelAnalyzer\Analyzer;
-use Naoray\EloquentModelAnalyzer\Column;
-use Naoray\EloquentModelAnalyzer\RelationMethod;
 use PhpParser\NodeFinder;
 use PhpParser\ParserFactory;
 
@@ -31,26 +27,6 @@ class FactoryGenerator
         $this->overwrite = $overwrite;
     }
 
-    /**
-     * Build relation function.
-     *
-     *
-     * @return string
-     */
-    public function buildRelationFunction(string $column, $relationMethod = null)
-    {
-        $relationName = optional($relationMethod)['name'] ?? Str::camel(str_replace('_id', '', $column));
-        $foreignCallback = '\\App\\REPLACE_THIS::factory()';
-
-        try {
-            $relatedModel = get_class($this->modelInstance->$relationName()->getRelated());
-
-            return str_replace('App\\REPLACE_THIS', $relatedModel, $foreignCallback);
-        } catch (\Exception $e) {
-            return $foreignCallback;
-        }
-    }
-
     public function generate($model): ?string
     {
         if (! $modelClass = $this->modelExists($model)) {
@@ -65,7 +41,7 @@ class FactoryGenerator
 
         $this->modelInstance = new $modelClass();
 
-        $code = Artisan::call('model:show', ['model' => $modelClass, '--json']);
+        $code = Artisan::call('model:show', ['model' => $modelClass, '--json' => true]);
         if ($code !== 0) {
             return null;
         }
@@ -75,8 +51,10 @@ class FactoryGenerator
             return null;
         }
 
-        collect($this->columns())
-            ->merge($this->relationships())
+        $foreign_keys = $this->modelInstance->getConnection()->getSchemaBuilder()->getForeignKeys($json['table']);
+
+        collect($this->columns($json['attributes'], $foreign_keys))
+            ->merge($this->relationships($json['relations']))
             ->filter()
             ->unique()
             ->values()
@@ -151,31 +129,26 @@ class FactoryGenerator
      */
     protected function mapColumn(array $column): array
     {
+        dump($column);
         $key = $column['name'];
 
         if (! $this->shouldBeIncluded($column)) {
-            return $this->mapToFactory($key);
+            return $this->factoryTuple($key);
         }
 
-        if ($column['foreign']) {
-            return $this->mapToFactory(
-                $key,
-                $this->buildRelationFunction($key)
-            );
-        }
-
+        // TODO: probably belongs elsewhere...
         if ($key === 'password') {
-            return $this->mapToFactory($key, "Hash::make('password')");
+            return $this->factoryTuple($key, "Hash::make('password')");
         }
 
         $value = $column['unique']
             ? '$this->faker->unique()->'
             : '$this->faker->';
 
-        return $this->mapToFactory($key, $value.$this->mapToFaker($column));
+        return $this->factoryTuple($key, $value.$this->mapToFaker($column));
     }
 
-    protected function mapToFactory($key, $value = null): array
+    protected function factoryTuple($key, $value = null): array
     {
         return [
             $key => is_null($value) ? $value : "'{$key}' => $value",
@@ -184,11 +157,8 @@ class FactoryGenerator
 
     /**
      * Map name to faker method.
-     *
-     * @param  Column  $column
-     * @return string
      */
-    protected function mapToFaker(array $column)
+    protected function mapToFaker(array $column): string
     {
         return $this->typeGuesser->guess(
             $column['name'],
@@ -199,11 +169,8 @@ class FactoryGenerator
 
     /**
      * Check if the given model exists.
-     *
-     * @param  string  $name
-     * @return bool|string
      */
-    protected function modelExists($name): bool
+    protected function modelExists(string $name): string
     {
         if (class_exists($modelClass = $this->qualifyClass($name))) {
             return $modelClass;
@@ -215,11 +182,8 @@ class FactoryGenerator
 
     /**
      * Parse the class name and format according to the root namespace.
-     *
-     * @param  string  $name
-     * @return string
      */
-    protected function qualifyClass($name)
+    protected function qualifyClass(string $name): string
     {
         $name = ltrim($name, '\\/');
 
@@ -237,20 +201,17 @@ class FactoryGenerator
     }
 
     /**
-     * Get properties via reflection from methods.
+     * Get properties for relationships where we can build
+     * other factories. Currently, that's simply BelongsTo.
      */
-    protected function relationships(): Collection
+    protected function relationships(array $relationships): Collection
     {
-        Artisan::call('', ['--nowrite' => true])->output();
+        return collect($relationships)
+            ->filter(fn ($relationship) => $relationship['type'] === 'BelongsTo')
+            ->mapWithKeys(function ($relationship) {
+                $property = $this->modelInstance->{$relationship['name']}->getForeignPivotKeyName();
 
-        return Analyzer::relations($this->modelInstance)
-            ->filter(function (RelationMethod $method) {
-                return $method->returnType() === BelongsTo::class;
-            })
-            ->mapWithKeys(function (RelationMethod $method) {
-                $property = $method->foreignKey();
-
-                return [$property => "'$property' => ".$this->buildRelationFunction($property, $method)];
+                return [$property => "'$property' => \\".$relationship['related'].'::factory()'];
             });
     }
 
@@ -260,8 +221,9 @@ class FactoryGenerator
     protected function shouldBeIncluded(array $column): bool
     {
         $shouldBeIncluded = ($column['nullable'] || $this->includeNullableColumns)
-            && ! $column['auto_increment']
-            && ! $column['primary'];
+            && ! $column['increments']
+            && ! $column['foreign']
+            && $column['name'] !== $this->modelInstance->getKeyName();
 
         if (! $this->modelInstance->usesTimestamps()) {
             return $shouldBeIncluded;
@@ -303,9 +265,24 @@ class FactoryGenerator
         File::put($path, $contents);
     }
 
-    private function columns(): Collection
+    private function appendColumnData(array $column, array $foreignKeys): array
     {
-        return collect()->mapWithKeys(fn ($column) => $this->mapColumn($column));
+        $column['foreign'] = in_array($column['name'], $foreignKeys);
+        $column['length'] = null;
+
+        if (str_contains($column['type'], '(')) {
+            $column['length'] = Str::between($column['type'], '(', ')');
+            $column['type'] = Str::before($column['type'], '(');
+        }
+
+        return $column;
+    }
+
+    private function columns(array $attributes, array $foreignKeys): Collection
+    {
+        return collect($attributes)
+            ->map(fn ($column) => $this->appendColumnData($column, $foreignKeys))
+            ->mapWithKeys(fn ($column) => $this->mapColumn($column));
     }
 
     private function factoryPath($model): string

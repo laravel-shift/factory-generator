@@ -2,8 +2,6 @@
 
 namespace Shift\FactoryGenerator;
 
-use Doctrine\DBAL\Types\Type;
-use Doctrine\DBAL\Types\Types;
 use Faker\Generator as Faker;
 use Faker\Provider\Base;
 use Illuminate\Support\Str;
@@ -23,12 +21,7 @@ class TypeGuesser
         $this->generator = $generator;
     }
 
-    /**
-     * @param  string  $name
-     * @param  int|null  $size  Length of field, if known
-     * @return string
-     */
-    public function guess($name, Type $type, $size = null)
+    public function guess(string $name, string $type, ?string $size = null): string
     {
         $name = Str::of($name)->lower();
 
@@ -53,12 +46,8 @@ class TypeGuesser
 
     /**
      * Get type guess.
-     *
-     * @param  string  $name
-     * @param  int|null  $size
-     * @return string|null
      */
-    protected function guessBasedOnName($name, $size = null)
+    protected function guessBasedOnName(string $name, ?string $size = null): ?string
     {
         switch ($name) {
             case 'login':
@@ -99,11 +88,8 @@ class TypeGuesser
 
     /**
      * Get native name for the given string.
-     *
-     *
-     * @return string|null
      */
-    protected function nativeNameFor(string $lookup)
+    protected function nativeNameFor(string $lookup): ?string
     {
         static $fakerMethodNames = [];
 
@@ -125,52 +111,40 @@ class TypeGuesser
 
     /**
      * Get public methods as a lookup pair.
-     *
-     *
-     * @return array
      */
-    protected function getNamesFromProvider(Base $provider)
+    protected function getNamesFromProvider(Base $provider): array
     {
         return collect(get_class_methods($provider))
-            ->reject(function (string $methodName) {
-                return Str::startsWith($methodName, '__');
-            })
-            ->mapWithKeys(function (string $methodName) {
-                return [Str::lower($methodName) => $methodName];
-            })
-            ->toArray();
+            ->reject(fn (string $methodName) => Str::startsWith($methodName, '__'))
+            ->mapWithKeys(fn (string $methodName) => [Str::lower($methodName) => $methodName])
+            ->all();
     }
 
     /**
      * Try to guess the right faker method for the given type.
-     *
-     * @param  int|null  $size
-     * @return string
      */
-    protected function guessBasedOnType(Type $type, $size)
+    protected function guessBasedOnType(string $type, ?string $size): string
     {
-        $typeName = $type->getName();
-
-        switch ($typeName) {
-            case Types::BOOLEAN:
+        switch ($type) {
+            case 'boolean':
                 return 'boolean()';
-            case Types::BIGINT:
-            case Types::INTEGER:
-            case Types::SMALLINT:
+            case 'bigint':
+            case 'integer':
+            case 'smallint':
                 return 'randomNumber('.$size.')';
-            case Types::DATE_MUTABLE:
-            case Types::DATE_IMMUTABLE:
+            case 'date_mutable':
+            case 'date_immutable':
                 return 'date()';
-            case Types::DATETIME_MUTABLE:
-            case Types::DATETIME_IMMUTABLE:
+            case 'datetime_mutable':
+            case 'datetime_immutable':
                 return 'dateTime()';
-            case Types::DECIMAL:
-            case Types::FLOAT:
+            case 'decimal':
+            case 'float':
                 return 'randomFloat('.$size.')';
-            case Types::TEXT:
+            case 'text':
                 return 'text()';
-            case Types::TIME_MUTABLE:
-            case Types::TIME_IMMUTABLE:
+            case 'time_mutable':
+            case 'time_immutable':
                 return 'time()';
             default:
                 return 'word()';
@@ -179,10 +153,8 @@ class TypeGuesser
 
     /**
      * Predicts county type by locale.
-     *
-     * @return string
      */
-    protected function predictCountyType()
+    protected function predictCountyType(): string
     {
         if ($this->generator->locale == 'en_US') {
             return "sprintf('%s County', \$faker->city())";
@@ -193,11 +165,8 @@ class TypeGuesser
 
     /**
      * Predicts country code based on $size.
-     *
-     * @param  int  $size
-     * @return string
      */
-    protected function predictCountryType($size)
+    protected function predictCountryType(int $size): string
     {
         switch ($size) {
             case 2:
@@ -214,11 +183,8 @@ class TypeGuesser
 
     /**
      * Predicts type of title by $size.
-     *
-     * @param  int  $size
-     * @return string
      */
-    protected function predictTitleType($size)
+    protected function predictTitleType(?int $size): string
     {
         if ($size === null || $size <= 10) {
             return 'title()';
