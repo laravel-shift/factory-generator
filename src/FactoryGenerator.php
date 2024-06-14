@@ -7,8 +7,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use PhpParser\NodeFinder;
-use PhpParser\ParserFactory;
 
 class FactoryGenerator
 {
@@ -59,7 +57,7 @@ class FactoryGenerator
             ->unique()
             ->values()
             ->pipe(function ($properties) use ($factoryPath, $modelClass) {
-                $this->writeFactoryFile($factoryPath, $properties, $modelClass);
+                $this->writeFactoryFile($factoryPath, $properties->all(), $modelClass);
                 $this->addFactoryTrait($modelClass);
             });
 
@@ -69,48 +67,33 @@ class FactoryGenerator
     protected function addFactoryTrait($modelClass)
     {
         $traits = class_uses_recursive($modelClass);
-        if (is_array($traits) && in_array('Illuminate\\Database\\Eloquent\\Factories\\HasFactory', $traits)) {
+        if (in_array('Illuminate\\Database\\Eloquent\\Factories\\HasFactory', $traits)) {
             return;
         }
 
         $path = (new \ReflectionClass($modelClass))->getFileName();
 
-        $parser = (new ParserFactory)->create(ParserFactory::ONLY_PHP7);
-
         $contents = File::get($path);
-        $lines = explode(PHP_EOL, $contents);
-        $stmts = $parser->parse($contents);
 
-        $nodeFinder = new NodeFinder;
+        $tokens = collect(\PhpToken::tokenize($contents));
 
-        $class = $nodeFinder->findFirstInstanceOf($stmts, \PhpParser\Node\Stmt\Class_::class);
+        $class = $tokens->first(fn (\PhpToken $token) => $token->id === T_CLASS);
+        $import = $tokens->first(fn (\PhpToken $token) => $token->id === T_USE);
 
-        $import = $nodeFinder->findFirstInstanceOf($stmts, \PhpParser\Node\Stmt\Use_::class);
-        if (empty($import)) {
-            $line = $class->getStartLine();
-        } else {
-            $line = $import->getStartLine();
-        }
+        $pos = strpos($contents, '{', $class->pos) + 1;
+        $replacement = PHP_EOL.'    use HasFactory;'.PHP_EOL;
+        $contents = substr_replace($contents, $replacement, $pos, 0);
 
-        array_splice($lines, $line - 1, 0, 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;');
+        $anchor = $import ?? $class;
 
-        $traits = $class->getTraitUses();
-        if (empty($traits)) {
-            // TODO: refactor
-            $line = $class->getStartLine() + 1; // add 1 due to import above
-            $found = false;
-            while (! $found) {
-                $found = Str::contains($lines[$line], '{'); // found closing curly
-                $line++; // advance one more line to place the trait...
-            }
+        $contents = substr_replace(
+            $contents,
+            'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;'.PHP_EOL,
+            $anchor->pos,
+            0
+        );
 
-            array_splice($lines, $line, 0, '    use HasFactory;'.PHP_EOL);
-        } else {
-            $line = $traits[0]->getStartLine();
-            array_splice($lines, $line + 1, 0, '    use HasFactory;');
-        }
-
-        File::put($path, implode(PHP_EOL, $lines));
+        File::put($path, $contents);
     }
 
     /**
@@ -129,7 +112,6 @@ class FactoryGenerator
      */
     protected function mapColumn(array $column): array
     {
-        dump($column);
         $key = $column['name'];
 
         if (! $this->shouldBeIncluded($column)) {
@@ -209,7 +191,7 @@ class FactoryGenerator
         return collect($relationships)
             ->filter(fn ($relationship) => $relationship['type'] === 'BelongsTo')
             ->mapWithKeys(function ($relationship) {
-                $property = $this->modelInstance->{$relationship['name']}->getForeignPivotKeyName();
+                $property = $this->modelInstance->{$relationship['name']}()->getForeignKeyName();
 
                 return [$property => "'$property' => \\".$relationship['related'].'::factory()'];
             });
@@ -249,18 +231,14 @@ class FactoryGenerator
     {
         File::ensureDirectoryExists(dirname($path));
 
-        $definition = '';
-        foreach ($data as $value) {
-            $definition .= PHP_EOL.'            '.$value.',';
-        }
-
         $factoryQualifiedName = \Illuminate\Database\Eloquent\Factories\Factory::resolveFactoryName($modelClass);
         $factoryNamespace = Str::beforeLast($factoryQualifiedName, '\\');
         $contents = File::get(__DIR__.'/../stubs/factory.stub');
         $contents = str_replace('{{ factoryNamespace }}', $factoryNamespace, $contents);
         $contents = str_replace('{{ namespacedModel }}', $modelClass, $contents);
         $contents = str_replace('{{ model }}', class_basename($modelClass), $contents);
-        $contents = str_replace('            //', trim($definition, PHP_EOL), $contents);
+        $definitions = array_map(fn ($value) => '            '.$value.',', $data);
+        $contents = str_replace('            //', implode(PHP_EOL, $definitions), $contents);
 
         File::put($path, $contents);
     }
