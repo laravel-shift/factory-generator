@@ -10,7 +10,8 @@
         "fakerphp/faker": "^1.9.1"
     },
     "require-dev": {
-        "orchestra/testbench": "^8.0|^9.0"
+        "orchestra/testbench": "^8.0|^9.0",
+        "phpunit/phpunit": "^10.5"
     },
     "autoload": {
         "psr-4": {
@@ -21,7 +22,10 @@
         "psr-4": {
             "Tests\\": "tests",
             "App\\": "vendor/orchestra/testbench-core/laravel/app"
-        }
+        },
+        "exclude-from-classmap": [
+            "tests/migrations"
+        ]
     },
     "extra": {
         "laravel": {

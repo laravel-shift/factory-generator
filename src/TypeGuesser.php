@@ -49,41 +49,24 @@ class TypeGuesser
      */
     protected function guessBasedOnName(string $name, ?string $size = null): ?string
     {
-        switch ($name) {
-            case 'login':
-                return 'userName()';
-            case 'email_address':
-            case 'emailaddress':
-                return 'email()';
-            case 'phone':
-            case 'telephone':
-            case 'telnumber':
-                return 'phoneNumber()';
-            case 'town':
-                return 'city()';
-            case 'postalcode':
-            case 'postal_code':
-            case 'zipcode':
-            case 'zip_code':
-                return 'postcode()';
-            case 'province':
-            case 'county':
-                return $this->predictCountyType();
-            case 'country':
-                return $this->predictCountryType($size);
-            case 'currency':
-                return 'currencyCode()';
-            case 'website':
-                return 'url()';
-            case 'companyname':
-            case 'company_name':
-            case 'employer':
-                return 'company()';
-            case 'title':
-                return $this->predictTitleType($size);
-            default:
-                return null;
+        if (str_ends_with($name, '_token')) {
+            return 'sha1()';
         }
+
+        return match ($name) {
+            'login' => 'userName()',
+            'email_address', 'emailaddress' => 'email()',
+            'phone', 'telephone', 'telnumber' => 'phoneNumber()',
+            'town' => 'city()',
+            'postalcode', 'postal_code', 'zipcode', 'zip_code' => 'postcode()',
+            'province', 'county' => $this->predictCountyType(),
+            'country' => $this->predictCountryType($size),
+            'currency' => 'currencyCode()',
+            'website' => 'url()',
+            'companyname', 'company_name', 'employer' => 'company()',
+            'title' => $this->predictTitleType($size),
+            default => null,
+        };
     }
 
     /**
@@ -125,30 +108,53 @@ class TypeGuesser
      */
     protected function guessBasedOnType(string $type, ?string $size): string
     {
-        switch ($type) {
-            case 'boolean':
-                return 'boolean()';
-            case 'bigint':
-            case 'integer':
-            case 'smallint':
-                return 'randomNumber('.$size.')';
-            case 'date_mutable':
-            case 'date_immutable':
-                return 'date()';
-            case 'datetime_mutable':
-            case 'datetime_immutable':
-                return 'dateTime()';
-            case 'decimal':
-            case 'float':
-                return 'randomFloat('.$size.')';
-            case 'text':
-                return 'text()';
-            case 'time_mutable':
-            case 'time_immutable':
-                return 'time()';
-            default:
-                return 'word()';
-        }
+        $type = match ($type) {
+            'tinyint(1)', 'bit', 'varbit', 'boolean', 'bool' => 'boolean',
+            'varchar(max)', 'nvarchar(max)', 'text', 'ntext', 'tinytext', 'mediumtext', 'longtext' => 'text',
+            'integer', 'int', 'int4', 'smallint', 'int2', 'tinyint', 'mediumint', 'bigint', 'int8' => 'integer',
+            'date' => 'date',
+            'decimal', 'float', 'real', 'float4', 'double', 'float8' => 'float',
+            'time', 'timetz' => 'time',
+            'datetime', 'datetime2', 'smalldatetime','datetimeoffset' => 'datetime',
+            'timestamp', 'timestamptz' => 'timestamp',
+            'json', 'jsonb' => 'json',
+            'uuid', 'uniqueidentifier' => 'uuid',
+            'inet', 'inet4', 'cidr' => 'ip_address',
+            'macaddr', 'macaddr8' => 'mac_address',
+            'year' => 'year',
+            'char', 'bpchar', 'nchar' => 'char',
+            'varchar', 'nvarchar' => 'string',
+            'binary', 'varbinary', 'bytea', 'image', 'blob', 'tinyblob', 'mediumblob', 'longblob' => 'binary',
+            'geometry', 'geometrycollection', 'linestring', 'multilinestring', 'point', 'multipoint', 'polygon', 'multipolygon' => 'geometry',
+            'geography' => 'geography',
+
+            // 'enum => 'enum',
+            // 'set' => 'set',
+            // 'money', 'smallmoney' => 'money',
+            // 'xml' => 'xml',
+            // 'interval' => 'interval',
+            // 'box', 'circle', 'line', 'lseg', 'path' => 'geometry',
+            // 'tsvector', 'tsquery' => 'text',
+            default => $type,
+        };
+
+        return match ($type) {
+            'boolean' => 'boolean()',
+            'char' => 'randomLetter()',
+            'date' => 'date()',
+            'datetime' => 'dateTime()',
+            'float' => 'randomFloat(' . $size . ')',
+            'inet6' => 'ipv6()',
+            'integer', 'number' => 'randomNumber(' . $size . ')',
+            'ip_address' => 'ipv4()',
+            'mac_address' => 'macAddress()',
+            'text' => 'text()',
+            'time' => 'time()',
+            'timestamp' => 'unixTime()',
+            'uuid' => 'uuid()',
+            'year' => 'year()',
+            default => 'word()',
+        };
     }
 
     /**
@@ -168,17 +174,12 @@ class TypeGuesser
      */
     protected function predictCountryType(int $size): string
     {
-        switch ($size) {
-            case 2:
-                return 'countryCode()';
-            case 3:
-                return 'countryISOAlpha3()';
-            case 5:
-            case 6:
-                return 'locale()';
-        }
-
-        return 'country()';
+        return match ($size) {
+            2 => 'countryCode()',
+            3 => 'countryISOAlpha3()',
+            5, 6 => 'locale()',
+            default => 'country()',
+        };
     }
 
     /**
