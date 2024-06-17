@@ -2,8 +2,6 @@
 
 namespace Shift\FactoryGenerator;
 
-use Doctrine\DBAL\Types\Type;
-use Doctrine\DBAL\Types\Types;
 use Faker\Generator as Faker;
 use Faker\Provider\Base;
 use Illuminate\Support\Str;
@@ -17,22 +15,13 @@ class TypeGuesser
 
     /**
      * Create a new TypeGuesser instance.
-     *
-     * @param \Faker\Generator $generator
      */
     public function __construct(Faker $generator)
     {
         $this->generator = $generator;
     }
 
-    /**
-     * @param string $name
-     * @param \Doctrine\DBAL\Types\Type $type
-     * @param int|null $size Length of field, if known
-     *
-     * @return string
-     */
-    public function guess($name, Type $type, $size = null)
+    public function guess(string $name, string $type, ?string $size = null): string
     {
         $name = Str::of($name)->lower();
 
@@ -45,7 +34,7 @@ class TypeGuesser
         }
 
         if ($nativeName = $this->nativeNameFor($name->replace('_', ''))) {
-            return $nativeName . '()';
+            return $nativeName.'()';
         }
 
         if ($name->endsWith('_url')) {
@@ -57,65 +46,39 @@ class TypeGuesser
 
     /**
      * Get type guess.
-     *
-     * @param string $name
-     * @param int|null $size
-     *
-     * @return string|null
      */
-    protected function guessBasedOnName($name, $size = null)
+    protected function guessBasedOnName(string $name, ?string $size = null): ?string
     {
-        switch ($name) {
-            case 'login':
-                return 'userName()';
-            case 'email_address':
-            case 'emailaddress':
-                return 'email()';
-            case 'phone':
-            case 'telephone':
-            case 'telnumber':
-                return 'phoneNumber()';
-            case 'town':
-                return 'city()';
-            case 'postalcode':
-            case 'postal_code':
-            case 'zipcode':
-            case 'zip_code':
-                return 'postcode()';
-            case 'province':
-            case 'county':
-                return $this->predictCountyType();
-            case 'country':
-                return $this->predictCountryType($size);
-            case 'currency':
-                return 'currencyCode()';
-            case 'website':
-                return 'url()';
-            case 'companyname':
-            case 'company_name':
-            case 'employer':
-                return 'company()';
-            case 'title':
-                return $this->predictTitleType($size);
-            default:
-                return null;
+        if (str_ends_with($name, '_token')) {
+            return 'sha1()';
         }
+
+        return match ($name) {
+            'login' => 'userName()',
+            'email_address', 'emailaddress' => 'email()',
+            'phone', 'telephone', 'telnumber' => 'phoneNumber()',
+            'town' => 'city()',
+            'postalcode', 'postal_code', 'zipcode', 'zip_code' => 'postcode()',
+            'province', 'county' => $this->predictCountyType(),
+            'country' => $this->predictCountryType($size),
+            'currency' => 'currencyCode()',
+            'website' => 'url()',
+            'companyname', 'company_name', 'employer' => 'company()',
+            'title' => $this->predictTitleType($size),
+            default => null,
+        };
     }
 
     /**
      * Get native name for the given string.
-     *
-     * @param string $lookup
-     *
-     * @return string|null
      */
-    protected function nativeNameFor(string $lookup)
+    protected function nativeNameFor(string $lookup): ?string
     {
         static $fakerMethodNames = [];
 
         if (empty($fakerMethodNames)) {
             $fakerMethodNames = collect($this->generator->getProviders())
-                ->flatMap(function(Base $provider) {
+                ->flatMap(function (Base $provider) {
                     return $this->getNamesFromProvider($provider);
                 })
                 ->unique()
@@ -131,69 +94,84 @@ class TypeGuesser
 
     /**
      * Get public methods as a lookup pair.
-     *
-     * @param \Faker\Provider\Base $provider
-     *
-     * @return array
      */
-    protected function getNamesFromProvider(Base $provider)
+    protected function getNamesFromProvider(Base $provider): array
     {
         return collect(get_class_methods($provider))
-            ->reject(function(string $methodName) {
-                return Str::startsWith($methodName, '__');
-            })
-            ->mapWithKeys(function(string $methodName) {
-                return [Str::lower($methodName) => $methodName];
-            })
-            ->toArray();
+            ->reject(fn (string $methodName) => Str::startsWith($methodName, '__'))
+            ->mapWithKeys(fn (string $methodName) => [Str::lower($methodName) => $methodName])
+            ->all();
     }
 
     /**
      * Try to guess the right faker method for the given type.
-     *
-     * @param Type $type
-     * @param int|null $size
-     *
-     * @return string
      */
-    protected function guessBasedOnType(Type $type, $size)
+    protected function guessBasedOnType(string $type, ?string $size): string
     {
-        $typeName = $type->getName();
-
-        switch ($typeName) {
-            case Types::BOOLEAN:
-                return 'boolean()';
-            case Types::BIGINT:
-            case Types::INTEGER:
-            case Types::SMALLINT:
-                return 'randomNumber(' . $size . ')';
-            case Types::DATE_MUTABLE:
-            case Types::DATE_IMMUTABLE:
-                return 'date()';
-            case Types::DATETIME_MUTABLE:
-            case Types::DATETIME_IMMUTABLE:
-                return 'dateTime()';
-            case Types::DECIMAL:
-            case Types::FLOAT:
-                return 'randomFloat(' . $size . ')';
-            case Types::TEXT:
-                return 'text()';
-            case Types::TIME_MUTABLE:
-            case Types::TIME_IMMUTABLE:
-                return 'time()';
-            default:
-                return 'word()';
+        $precision = 0;
+        if (str_contains($size, ',')) {
+            [$size, $precision] = explode(',', $size, 2);
         }
+
+        $type = match ($type) {
+            'tinyint(1)', 'bit', 'varbit', 'boolean', 'bool' => 'boolean',
+            'varchar(max)', 'nvarchar(max)', 'text', 'ntext', 'tinytext', 'mediumtext', 'longtext' => 'text',
+            'integer', 'int', 'int4', 'smallint', 'int2', 'tinyint', 'mediumint', 'bigint', 'int8' => 'integer',
+            'date' => 'date',
+            'decimal', 'float', 'real', 'float4', 'double', 'float8' => 'float',
+            'time', 'timetz' => 'time',
+            'datetime', 'datetime2', 'smalldatetime','datetimeoffset' => 'datetime',
+            'timestamp', 'timestamptz' => 'timestamp',
+            'json', 'jsonb' => 'json',
+            'uuid', 'uniqueidentifier' => 'uuid',
+            'inet', 'inet4', 'cidr' => 'ip_address',
+            'macaddr', 'macaddr8' => 'mac_address',
+            'year' => 'year',
+            'char', 'bpchar', 'nchar' => 'char',
+            'varchar', 'nvarchar' => 'string',
+            'binary', 'varbinary', 'bytea', 'image', 'blob', 'tinyblob', 'mediumblob', 'longblob' => 'binary',
+            'geometry', 'geometrycollection', 'linestring', 'multilinestring', 'point', 'multipoint', 'polygon', 'multipolygon' => 'geometry',
+            'geography' => 'geography',
+
+            // 'enum => 'enum',
+            // 'set' => 'set',
+            // 'money', 'smallmoney' => 'money',
+            // 'xml' => 'xml',
+            // 'interval' => 'interval',
+            // 'box', 'circle', 'line', 'lseg', 'path' => 'geometry',
+            // 'tsvector', 'tsquery' => 'text',
+            default => $type,
+        };
+
+        if ($type === 'float' && $precision == 0) {
+            $type = 'integer';
+        }
+
+        return match ($type) {
+            'boolean' => 'boolean()',
+            'char' => 'randomLetter()',
+            'date' => 'date()',
+            'datetime' => 'dateTime()',
+            'float' => 'randomFloat('.$precision.')',
+            'inet6' => 'ipv6()',
+            'integer', 'number' => 'randomNumber('.$size.')',
+            'ip_address' => 'ipv4()',
+            'mac_address' => 'macAddress()',
+            'text' => 'text()',
+            'time' => 'time()',
+            'timestamp' => 'unixTime()',
+            'uuid' => 'uuid()',
+            'year' => 'year()',
+            default => 'word()',
+        };
     }
 
     /**
      * Predicts county type by locale.
-     *
-     * @return string
      */
-    protected function predictCountyType()
+    protected function predictCountyType(): string
     {
-        if ('en_US' == $this->generator->locale) {
+        if ($this->generator->locale == 'en_US') {
             return "sprintf('%s County', \$faker->city())";
         }
 
@@ -202,36 +180,23 @@ class TypeGuesser
 
     /**
      * Predicts country code based on $size.
-     *
-     * @param int $size
-     *
-     * @return string
      */
-    protected function predictCountryType($size)
+    protected function predictCountryType(int $size): string
     {
-        switch ($size) {
-            case 2:
-                return 'countryCode()';
-            case 3:
-                return 'countryISOAlpha3()';
-            case 5:
-            case 6:
-                return 'locale()';
-        }
-
-        return 'country()';
+        return match ($size) {
+            2 => 'countryCode()',
+            3 => 'countryISOAlpha3()',
+            5, 6 => 'locale()',
+            default => 'country()',
+        };
     }
 
     /**
      * Predicts type of title by $size.
-     *
-     * @param int $size
-     *
-     * @return string
      */
-    protected function predictTitleType($size)
+    protected function predictTitleType(?int $size): string
     {
-        if (null === $size || $size <= 10) {
+        if ($size === null || $size <= 10) {
             return 'title()';
         }
 

@@ -14,87 +14,6 @@ class GenerateCommandTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->setUpDatabase($this->app);
-
-        $this->beforeApplicationDestroyed(function () {
-            File::cleanDirectory(app_path());
-            File::cleanDirectory(database_path('factories'));
-        });
-    }
-
-    /**
-     * Set up the database.
-     *
-     * @param \Illuminate\Foundation\Application $app
-     */
-    protected function setUpDatabase($app)
-    {
-        $this->loadMigrationsFrom([
-            '--path' => realpath(__DIR__ . '/migrations'),
-            '--realpath' => true,
-        ]);
-    }
-
-    /** @test */
-    public function it_returns_a_no_files_found_error_if_no_files_were_found_in_the_given_directory()
-    {
-        $this->artisan('generate:factory', [
-            '--no-interaction' => true,
-            '--path' => $directory = __DIR__ . '/Fixtures/NonExistent',
-            '--include-nullable' => true,
-        ])
-            ->expectsOutput("No files in [$directory] were found!")
-            ->assertExitCode(1)
-            ->run();
-    }
-
-    /** @test */
-    public function it_can_create_prefilled_factories_for_all_models()
-    {
-        $this->artisan('generate:factory', [
-            '--no-interaction' => true,
-            '--path' => __DIR__ . '/Fixtures/Models',
-            '--include-nullable' => true,
-        ])
-            ->expectsOutput('3 factories created')
-            ->run();
-
-        $this->assertFileExists(database_path('factories/CarFactory.php'));
-        $this->assertFileExists(database_path('factories/HabitFactory.php'));
-        $this->assertFileExists(database_path('factories/UserFactory.php'));
-    }
-
-    /** @test */
-    public function it_can_create_prefilled_factories_for_defined_models_only_with_including_namespace()
-    {
-        $this->artisan('generate:factory', [
-            'models' => [
-                '\Tests\Fixtures\Models\Car',
-                '\Tests\Fixtures\Models\Habit',
-            ],
-            '--no-interaction' => true,
-            '--include-nullable' => true,
-        ])
-            ->expectsOutput('2 factories created')
-            ->run();
-
-        $this->assertFileExists(database_path('factories/CarFactory.php'));
-        $this->assertFileExists(database_path('factories/HabitFactory.php'));
-    }
-
-
-    /** @test */
-    public function it_asks_if_a_model_shall_be_created_if_it_does_not_yet_exist()
-    {
-        $this->artisan('generate:factory', ['models' => ['App\\NonExistent']])
-            ->expectsOutput('Model created successfully.')
-            ->run();
-    }
-
     /** @test */
     public function it_asks_if_a_factory_should_be_overridden_if_it_already_exists()
     {
@@ -107,16 +26,11 @@ class GenerateCommandTest extends TestCase
     }
 
     /** @test */
-    public function it_can_create_prefilled_factories_for_a_model()
+    public function it_asks_if_a_model_shall_be_created_if_it_does_not_yet_exist()
     {
-        $this->artisan('generate:factory', [
-            'models' => [Habit::class],
-            '--no-interaction' => true,
-        ])
-            ->expectsOutput('Factory blueprint created!')
+        $this->artisan('generate:factory', ['models' => ['App\\NonExistent']])
+            ->expectsOutput('Model created successfully.')
             ->run();
-
-        $this->assertFileExists(database_path('factories/HabitFactory.php'));
     }
 
     /** @test */
@@ -154,14 +68,67 @@ class GenerateCommandTest extends TestCase
     }
 
     /** @test */
-    public function it_prints_an_error_if_no_database_info_could_be_found()
+    public function it_can_correctly_prefill_password_columns()
     {
         $this->artisan('generate:factory', [
-            'models' => [Book::class],
+            'models' => [User::class],
             '--no-interaction' => true,
         ])
-            ->expectsOutput('We could not find any data for your factory. Did you `php artisan migrate` already?')
+            ->expectsOutput('Factory blueprint created!')
             ->run();
+
+        $this->assertFileExists(database_path('factories/UserFactory.php'));
+        $this->assertTrue(Str::contains(
+            File::get(database_path('factories/UserFactory.php')),
+            "'password' => bcrypt('password'),"
+        ));
+    }
+
+    /** @test */
+    public function it_can_create_prefilled_factories_for_a_model()
+    {
+        $this->artisan('generate:factory', [
+            'models' => [Habit::class],
+            '--no-interaction' => true,
+        ])
+            ->expectsOutput('Factory blueprint created!')
+            ->run();
+
+        $this->assertFileExists(database_path('factories/HabitFactory.php'));
+    }
+
+    /** @test */
+    public function it_can_create_prefilled_factories_for_all_models()
+    {
+        $this->artisan('generate:factory', [
+            '--no-interaction' => true,
+            '--path' => __DIR__.'/Fixtures/Models',
+            '--include-nullable' => true,
+        ])
+            ->expectsOutput('3 factories created')
+            ->run();
+
+        $this->assertFileExists(database_path('factories/CarFactory.php'));
+        $this->assertFileExists(database_path('factories/HabitFactory.php'));
+        $this->assertFileExists(database_path('factories/UserFactory.php'));
+    }
+
+    /** @test */
+    public function it_can_create_prefilled_factories_for_defined_models_only_with_including_namespace()
+    {
+        $this->artisan('generate:factory', [
+            'models' => [
+                '\Tests\Fixtures\Models\Car',
+                '\Tests\Fixtures\Models\Habit',
+            ],
+            '--no-interaction' => true,
+            '--include-nullable' => true,
+        ])
+            ->expectsOutput('2 factories created')
+            ->run();
+
+        $this->assertFileExists(database_path('factories/CarFactory.php'));
+        $this->assertFileExists(database_path('factories/HabitFactory.php'));
     }
 
     /** @test */
@@ -223,24 +190,51 @@ class GenerateCommandTest extends TestCase
         $this->assertFileExists($path = database_path('factories/CarFactory.php'));
         $this->assertTrue(Str::contains(
             File::get($path),
-            "'previous_owner_id' => factory(" . User::class . '::class)->lazy(),'
+            "'previous_owner_id' => factory(".User::class.'::class)->lazy(),'
         ));
     }
 
     /** @test */
-    public function it_can_correctly_prefill_password_columns()
+    public function it_prints_an_error_if_no_database_info_could_be_found()
     {
         $this->artisan('generate:factory', [
-            'models' => [User::class],
+            'models' => [Book::class],
             '--no-interaction' => true,
         ])
-            ->expectsOutput('Factory blueprint created!')
+            ->expectsOutput('We could not find any data for your factory. Did you `php artisan migrate` already?')
             ->run();
+    }
 
-        $this->assertFileExists(database_path('factories/UserFactory.php'));
-        $this->assertTrue(Str::contains(
-            File::get(database_path('factories/UserFactory.php')),
-            "'password' => bcrypt('password'),"
-        ));
+    /** @test */
+    public function it_returns_a_no_files_found_error_if_no_files_were_found_in_the_given_directory()
+    {
+        $this->artisan('generate:factory', [
+            '--no-interaction' => true,
+            '--path' => $directory = __DIR__.'/Fixtures/NonExistent',
+            '--include-nullable' => true,
+        ])
+            ->expectsOutput("No files in [$directory] were found!")
+            ->assertExitCode(1)
+            ->run();
+    }
+
+    /**
+     * Define database migrations.
+     *
+     * @return void
+     */
+    protected function defineDatabaseMigrations()
+    {
+        $this->loadMigrationsFrom(realpath(__DIR__.'/migrations'));
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->beforeApplicationDestroyed(function () {
+            File::cleanDirectory(app_path());
+            File::cleanDirectory(database_path('factories'));
+        });
     }
 }

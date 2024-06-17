@@ -1,5 +1,5 @@
 # Laravel Model Factory Generator
-This package generates model factories from existing models using the new [class-based factories](https://laravel.com/docs/8.x/database-testing#writing-factories) in Laravel 8.
+This package generates model factories from existing models using the new [class-based factories](https://laravel.com/docs/8.x/database-testing#writing-factories) introduced in Laravel 8.
 
 
 ## Installation
@@ -9,7 +9,7 @@ You may install this package via composer by running:
 composer require --dev laravel-shift/factory-generator
 ```
 
-The package will automatically register itself.
+The package will automatically register itself using Laravel's package discovery.
 
 
 ## Usage
@@ -49,4 +49,4 @@ It has diverged to support the latest version of Laravel and to power part of th
 
 
 ## Contributing
-Contributions should be submitted to the `master` branch. Any submissions should be complete with tests and adhere to the [PSR-2 code style](https://www.php-fig.org/psr/psr-2/). You may also contribute by [opening an issue](https://github.com/laravel-shift/factory-generator/issues).
+Contributions should be submitted to the `master` branch. Any submissions should be complete with tests and adhere to the [Laravel code style](https://www.php-fig.org/psr/psr-2/). You may also contribute by [opening an issue](https://github.com/laravel-shift/factory-generator/issues).

@@ -2,122 +2,212 @@
 
 namespace Shift\FactoryGenerator;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Naoray\EloquentModelAnalyzer\Analyzer;
-use Naoray\EloquentModelAnalyzer\Column;
-use Naoray\EloquentModelAnalyzer\RelationMethod;
-use PhpParser\NodeFinder;
-use PhpParser\ParserFactory;
 
 class FactoryGenerator
 {
-    /**
-     * @var \Shift\FactoryGenerator\TypeGuesser
-     */
-    protected $typeGuesser;
+    private bool $includeNullableColumns = false;
 
-    private $includeNullableColumns = false;
+    protected Model $modelInstance;
 
-    private $overwrite = false;
+    private bool $overwrite = false;
 
-    /**
-     * Instance of the model the factory is created for.
-     *
-     * @var \Illuminate\Database\Eloquent\Model
-     */
-    protected $modelInstance;
+    protected TypeGuesser $typeGuesser;
 
-    public function __construct(TypeGuesser $guesser, $nullables, $overwrite)
+    public function __construct(TypeGuesser $guesser, bool $nullables, bool $overwrite)
     {
         $this->typeGuesser = $guesser;
         $this->includeNullableColumns = $nullables;
         $this->overwrite = $overwrite;
     }
 
-    public function generate($model)
+    public function generate($model): ?string
     {
-        if (!$modelClass = $this->modelExists($model)) {
+        if (! $modelClass = $this->modelExists($model)) {
             return null;
         }
 
         $factoryPath = $this->factoryPath($modelClass);
 
-        if (!$this->overwrite && $this->factoryExists($factoryPath)) {
+        if (! $this->overwrite && $this->factoryExists($factoryPath)) {
             return null;
         }
 
         $this->modelInstance = new $modelClass();
 
-        Analyzer::columns($this->modelInstance)
-            ->mapWithKeys(function (Column $column) {
-                return $this->mapTableProperties($column);
-            })
-            ->merge($this->getPropertiesFromMethods())
+        $code = Artisan::call('model:show', ['model' => $modelClass, '--json' => true]);
+        if ($code !== 0) {
+            return null;
+        }
+
+        $json = json_decode(Artisan::output(), true);
+        if (! $json) {
+            return null;
+        }
+
+        $foreign_keys = $this->modelInstance->getConnection()->getSchemaBuilder()->getForeignKeys($json['table']);
+
+        collect($this->columns($json['attributes'], $foreign_keys))
+            ->merge($this->relationships($json['relations']))
             ->filter()
             ->unique()
             ->values()
             ->pipe(function ($properties) use ($factoryPath, $modelClass) {
-                $this->writeFactoryFile($factoryPath, $properties, $modelClass);
+                $this->writeFactoryFile($factoryPath, $properties->all(), $modelClass);
                 $this->addFactoryTrait($modelClass);
             });
 
         return $factoryPath;
     }
 
-    private function factoryPath($model)
+    protected function addFactoryTrait($modelClass)
     {
-        $subDirectory = Str::of($model)
-            ->replaceFirst('App\\Models\\', '')
-            ->replaceFirst('App\\', '');
+        $traits = class_uses_recursive($modelClass);
+        if (in_array('Illuminate\\Database\\Eloquent\\Factories\\HasFactory', $traits)) {
+            return;
+        }
 
-        return database_path('factories/' . str_replace('\\', '/', $subDirectory) . 'Factory.php');
+        $path = (new \ReflectionClass($modelClass))->getFileName();
+
+        $contents = File::get($path);
+
+        $tokens = collect(\PhpToken::tokenize($contents));
+
+        $class = $tokens->first(fn (\PhpToken $token) => $token->id === T_CLASS);
+        $import = $tokens->first(fn (\PhpToken $token) => $token->id === T_USE);
+
+        $pos = strpos($contents, '{', $class->pos) + 1;
+        $replacement = PHP_EOL.'    use HasFactory;'.PHP_EOL;
+        $contents = substr_replace($contents, $replacement, $pos, 0);
+
+        $anchor = $import ?? $class;
+
+        $contents = substr_replace(
+            $contents,
+            'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;'.PHP_EOL,
+            $anchor->pos,
+            0
+        );
+
+        File::put($path, $contents);
     }
 
     /**
-     * Maps properties.
+     * Check if factory already exists.
      *
-     * @param Column $column
-     * @return array
+     * @param  string  $name
+     * @return bool|string
      */
-    protected function mapTableProperties(Column $column): array
+    protected function factoryExists($path): bool
     {
-        $key = $column->getName();
+        return File::exists($path);
+    }
 
-        if (!$this->shouldBeIncluded($column)) {
-            return $this->mapToFactory($key);
+    /**
+     * Map database table column definition to faker value.
+     */
+    protected function mapColumn(array $column): array
+    {
+        $key = $column['name'];
+
+        if (! $this->shouldBeIncluded($column)) {
+            return $this->factoryTuple($key);
         }
 
-        if ($column->isForeignKey()) {
-            return $this->mapToFactory(
-                $key,
-                $this->buildRelationFunction($key)
-            );
-        }
-
+        // TODO: probably belongs elsewhere...
         if ($key === 'password') {
-            return $this->mapToFactory($key, "Hash::make('password')");
+            return $this->factoryTuple($key, "Hash::make('password')");
         }
 
-        $value = $column->isUnique()
+        $value = $column['unique']
             ? '$this->faker->unique()->'
             : '$this->faker->';
 
-        return $this->mapToFactory($key, $value . $this->mapToFaker($column));
+        return $this->factoryTuple($key, $value.$this->mapToFaker($column));
+    }
+
+    protected function factoryTuple($key, $value = null): array
+    {
+        return [
+            $key => is_null($value) ? $value : "'{$key}' => $value",
+        ];
     }
 
     /**
-     * Checks if a given column should be included in the factory.
-     *
-     * @param Column $column
+     * Map name to faker method.
      */
-    protected function shouldBeIncluded(Column $column)
+    protected function mapToFaker(array $column): string
     {
-        $shouldBeIncluded = ($column->getNotNull() || $this->includeNullableColumns)
-            && !$column->getAutoincrement();
+        return $this->typeGuesser->guess(
+            $column['name'],
+            $column['type'],
+            $column['length']
+        );
+    }
 
-        if (!$this->modelInstance->usesTimestamps()) {
+    /**
+     * Check if the given model exists.
+     */
+    protected function modelExists(string $name): string
+    {
+        if (class_exists($modelClass = $this->qualifyClass($name))) {
+            return $modelClass;
+        }
+
+        // TODO: this check should happen before calling this service class...
+        throw new \UnexpectedValueException('could not find model ['.$name.']');
+    }
+
+    /**
+     * Parse the class name and format according to the root namespace.
+     */
+    protected function qualifyClass(string $name): string
+    {
+        $name = ltrim($name, '\\/');
+
+        $rootNamespace = app()->getNamespace();
+
+        if (Str::startsWith($name, $rootNamespace)) {
+            return $name;
+        }
+
+        $name = str_replace('/', '\\', $name);
+
+        return $this->qualifyClass(
+            trim($rootNamespace, '\\').'\\'.$name
+        );
+    }
+
+    /**
+     * Get properties for relationships where we can build
+     * other factories. Currently, that's simply BelongsTo.
+     */
+    protected function relationships(array $relationships): Collection
+    {
+        return collect($relationships)
+            ->filter(fn ($relationship) => $relationship['type'] === 'BelongsTo')
+            ->mapWithKeys(function ($relationship) {
+                $property = $this->modelInstance->{$relationship['name']}()->getForeignKeyName();
+
+                return [$property => "'$property' => \\".$relationship['related'].'::factory()'];
+            });
+    }
+
+    /**
+     * Check if a given column should be included in the factory.
+     */
+    protected function shouldBeIncluded(array $column): bool
+    {
+        $shouldBeIncluded = (! $column['nullable'] || $this->includeNullableColumns)
+            && ! $column['increments']
+            && ! $column['foreign']
+            && $column['name'] !== $this->modelInstance->getKeyName();
+
+        if (! $this->modelInstance->usesTimestamps()) {
             return $shouldBeIncluded;
         }
 
@@ -131,196 +221,54 @@ class FactoryGenerator
         }
 
         return $shouldBeIncluded
-            && !in_array($column->getName(), $timestamps);
-    }
-
-    protected function mapToFactory($key, $value = null): array
-    {
-        return [
-            $key => is_null($value) ? $value : "'{$key}' => $value",
-        ];
+            && ! in_array($column['name'], $timestamps);
     }
 
     /**
-     * Get properties via reflection from methods.
-     *
-     * @return \Illuminate\Support\Collection
+     * Write the model factory file using the given definition and path.
      */
-    protected function getPropertiesFromMethods()
-    {
-        return Analyzer::relations($this->modelInstance)
-            ->filter(function (RelationMethod $method) {
-                return $method->returnType() === BelongsTo::class;
-            })
-            ->mapWithKeys(function (RelationMethod $method) {
-                $property = $method->foreignKey();
-
-                return [$property => "'$property' => " . $this->buildRelationFunction($property, $method)];
-            });
-    }
-
-    /**
-     * Check if the given model exists.
-     *
-     * @param string $name
-     *
-     * @return bool|string
-     */
-    protected function modelExists($name)
-    {
-        if (class_exists($modelClass = $this->qualifyClass($name))) {
-            return $modelClass;
-        }
-
-        // TODO: this check should happen before calling this service class...
-        throw new \UnexpectedValueException('could not find model [' . $name . ']');
-    }
-
-    /**
-     * Check if factory already exists.
-     *
-     * @param string $name
-     *
-     * @return bool|string
-     */
-    protected function factoryExists($path)
-    {
-        return File::exists($path);
-    }
-
-    /**
-     * Map name to faker method.
-     *
-     * @param Column $column
-     *
-     * @return string
-     */
-    protected function mapToFaker(Column $column)
-    {
-        return $this->typeGuesser->guess(
-            $column->getName(),
-            $column->getType(),
-            $column->getLength()
-        );
-    }
-
-    /**
-     * Build relation function.
-     *
-     * @param string $column
-     *
-     * @return string
-     */
-    public function buildRelationFunction(string $column, $relationMethod = null)
-    {
-        $relationName = optional($relationMethod)->getName() ?? Str::camel(str_replace('_id', '', $column));
-        $foreignCallback = '\\App\\REPLACE_THIS::factory()';
-
-        try {
-            $relatedModel = get_class($this->modelInstance->$relationName()->getRelated());
-
-            return str_replace('App\\REPLACE_THIS', $relatedModel, $foreignCallback);
-        } catch (\Exception $e) {
-            return $foreignCallback;
-        }
-    }
-
-    /**
-     * Parse the class name and format according to the root namespace.
-     *
-     * @param string $name
-     *
-     * @return string
-     */
-    protected function qualifyClass($name)
-    {
-        $name = ltrim($name, '\\/');
-
-        $rootNamespace = app()->getNamespace();
-
-        if (Str::startsWith($name, $rootNamespace)) {
-            return $name;
-        }
-
-        $name = str_replace('/', '\\', $name);
-
-        return $this->qualifyClass(
-            trim($rootNamespace, '\\') . '\\' . $name
-        );
-    }
-
-    /**
-     * Writes data to factory file.
-     *
-     * @param string $path
-     * @param array $data
-     *
-     * @return bool
-     */
-    protected function writeFactoryFile($path, $data, $modelClass)
+    protected function writeFactoryFile(string $path, array $data, string $modelClass): void
     {
         File::ensureDirectoryExists(dirname($path));
 
-        $definition = '';
-        foreach ($data as $value) {
-            $definition .= PHP_EOL . '            ' . $value . ',';
-        }
-
         $factoryQualifiedName = \Illuminate\Database\Eloquent\Factories\Factory::resolveFactoryName($modelClass);
         $factoryNamespace = Str::beforeLast($factoryQualifiedName, '\\');
-        $contents = File::get(__DIR__ . '/../stubs/factory.stub');
+        $contents = File::get(__DIR__.'/../stubs/factory.stub');
         $contents = str_replace('{{ factoryNamespace }}', $factoryNamespace, $contents);
         $contents = str_replace('{{ namespacedModel }}', $modelClass, $contents);
         $contents = str_replace('{{ model }}', class_basename($modelClass), $contents);
-        $contents = str_replace('            //', trim($definition, PHP_EOL), $contents);
+        $definitions = array_map(fn ($value) => '            '.$value.',', $data);
+        $contents = str_replace('            //', implode(PHP_EOL, $definitions), $contents);
 
         File::put($path, $contents);
     }
 
-    protected function addFactoryTrait($modelClass)
+    private function appendColumnData(array $column, array $foreignKeys): array
     {
-        $traits = class_uses_recursive($modelClass);
-        if (is_array($traits) && in_array('Illuminate\\Database\\Eloquent\\Factories\\HasFactory', $traits)) {
-            return;
+        $column['foreign'] = in_array($column['name'], $foreignKeys);
+        $column['length'] = null;
+
+        if (str_contains($column['type'], '(')) {
+            $column['length'] = Str::between($column['type'], '(', ')');
+            $column['type'] = Str::before($column['type'], '(');
         }
 
-        $path = (new \ReflectionClass($modelClass))->getFileName();
+        return $column;
+    }
 
-        $parser = (new ParserFactory)->create(ParserFactory::ONLY_PHP7);
+    private function columns(array $attributes, array $foreignKeys): Collection
+    {
+        return collect($attributes)
+            ->map(fn ($column) => $this->appendColumnData($column, $foreignKeys))
+            ->mapWithKeys(fn ($column) => $this->mapColumn($column));
+    }
 
-        $contents = File::get($path);
-        $lines = explode(PHP_EOL, $contents);
-        $stmts = $parser->parse($contents);
+    private function factoryPath($model): string
+    {
+        $subDirectory = Str::of($model)
+            ->replaceFirst('App\\Models\\', '')
+            ->replaceFirst('App\\', '');
 
-        $nodeFinder = new NodeFinder;
-
-        $class = $nodeFinder->findFirstInstanceOf($stmts, \PhpParser\Node\Stmt\Class_::class);
-
-        $import = $nodeFinder->findFirstInstanceOf($stmts, \PhpParser\Node\Stmt\Use_::class);
-        if (empty($import)) {
-            $line = $class->getStartLine();
-        } else {
-            $line = $import->getStartLine();
-        }
-
-        array_splice($lines, $line - 1, 0, 'use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;');
-
-        $traits = $class->getTraitUses();
-        if (empty($traits)) {
-            // TODO: refactor
-            $line = $class->getStartLine() + 1; // add 1 due to import above
-            $found = false;
-            while (!$found) {
-                $found = Str::contains($lines[$line], '{'); // found closing curly
-                ++$line; // advance one more line to place the trait...
-            }
-
-            array_splice($lines, $line, 0, '    use HasFactory;' . PHP_EOL);
-        } else {
-            $line = $traits[0]->getStartLine();
-            array_splice($lines, $line + 1, 0, '    use HasFactory;');
-        }
-
-        File::put($path, implode(PHP_EOL, $lines));
+        return database_path('factories/'.str_replace('\\', '/', $subDirectory).'Factory.php');
     }
 }

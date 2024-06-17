@@ -11,22 +11,23 @@ use SplFileInfo;
 
 class GenerateCommand extends Command
 {
-    protected $signature = 'generate:factory {models?*}
+    protected $signature = 'generate:factory
                         {--p|path= : Load models from a specific path}
                         {--i|include-nullable : Include nullable columns in your factory}
-                        {--f|force : Overwrite any existing factory}';
+                        {--f|force : Overwrite any existing factory}
+                        {models?*}';
 
     protected $description = 'Generate factories for existing models';
 
-    public function handle()
+    public function handle(): int
     {
         $directory = $this->resolveModelPath();
         $models = $this->argument('models');
 
-        if (!File::exists($directory)) {
+        if (! File::exists($directory)) {
             $this->error("Path does not exist [$directory]");
 
-            return 1;
+            return self::FAILURE;
         }
 
         $generator = resolve(FactoryGenerator::class, ['nullables' => $this->option('include-nullable'), 'overwrite' => $this->option('force')]);
@@ -39,18 +40,18 @@ class GenerateCommand extends Command
                 $factory = $generator->generate($model);
 
                 if ($factory) {
-                    $this->line('<info>Model factory created:</info> ' . $factory);
+                    $this->line('<info>Model factory created:</info> '.$factory);
                 } else {
-                    $this->line('<error>Failed to create factory for model:</error> ' . $model);
+                    $this->line('<error>Failed to create factory for model:</error> '.$model);
                 }
             });
 
-        return 0;
+        return self::SUCCESS;
     }
 
     protected function loadModels(string $directory, array $models = []): Collection
     {
-        if (!empty($models)) {
+        if (! empty($models)) {
             $dir = str_replace(app_path(), '', $directory);
 
             return collect($models)->map(function ($name) use ($dir) {
@@ -59,26 +60,26 @@ class GenerateCommand extends Command
                 }
 
                 return str_replace(
-                    [DIRECTORY_SEPARATOR, basename($this->laravel->path()) . '\\'],
+                    [DIRECTORY_SEPARATOR, basename($this->laravel->path()).'\\'],
                     ['\\', $this->laravel->getNamespace()],
-                    basename($this->laravel->path()) . $dir . DIRECTORY_SEPARATOR . $name
+                    basename($this->laravel->path()).$dir.DIRECTORY_SEPARATOR.$name
                 );
             });
         }
 
         return collect(File::allFiles($directory))->map(function (SplFileInfo $file) {
-            if (!preg_match('/^namespace\s+([^;]+)/m', $file->getContents(), $matches)) {
+            if (! preg_match('/^namespace\s+([^;]+)/m', $file->getContents(), $matches)) {
                 return null;
             }
 
-            return $matches[1] . '\\' . $file->getBasename('.php');
+            return $matches[1].'\\'.$file->getBasename('.php');
         })->filter();
     }
 
     protected function resolveModelPath(): string
     {
         $path = $this->option('path');
-        if (!is_null($path)) {
+        if (! is_null($path)) {
             return base_path($path);
         }
 
