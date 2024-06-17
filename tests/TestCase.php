@@ -18,14 +18,4 @@ class TestCase extends Orchestra
             \Shift\FactoryGenerator\FactoryGeneratorServiceProvider::class,
         ];
     }
-
-    /**
-     * Define environment setup.
-     *
-     * @param  \Illuminate\Foundation\Application  $app
-     */
-    protected function getEnvironmentSetUp($app)
-    {
-        //
-    }
 }
