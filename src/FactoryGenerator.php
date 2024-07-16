@@ -205,7 +205,8 @@ class FactoryGenerator
         $shouldBeIncluded = (! $column['nullable'] || $this->includeNullableColumns)
             && ! $column['increments']
             && ! $column['foreign']
-            && $column['name'] !== $this->modelInstance->getKeyName();
+            && $column['name'] !== $this->modelInstance->getKeyName()
+            && !in_array($column['cast'], ['attribute', 'accessor', 'mutator']);
 
         if (! $this->modelInstance->usesTimestamps()) {
             return $shouldBeIncluded;
