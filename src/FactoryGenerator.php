@@ -260,6 +260,7 @@ class FactoryGenerator
     private function columns(array $attributes, array $foreignKeys): Collection
     {
         return collect($attributes)
+            ->reject(fn ($column) => is_null($column['type']))
             ->map(fn ($column) => $this->appendColumnData($column, $foreignKeys))
             ->mapWithKeys(fn ($column) => $this->mapColumn($column));
     }
