@@ -34,7 +34,9 @@ class GenerateCommand extends Command
 
         $this->loadModels($directory, $models)
             ->filter(function ($model) {
-                return (new ReflectionClass($model))->isSubclassOf(Model::class);
+                $model = new ReflectionClass($model);
+                
+                return $model->isSubclassOf(Model::class) && ! $model->isAbstract();
             })
             ->each(function ($model) use ($generator) {
                 $factory = $generator->generate($model);
