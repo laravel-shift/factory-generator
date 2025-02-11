@@ -181,7 +181,7 @@ class TypeGuesser
     /**
      * Predicts country code based on $size.
      */
-    protected function predictCountryType(int $size): string
+    protected function predictCountryType(?int $size): string
     {
         return match ($size) {
             2 => 'countryCode()',
